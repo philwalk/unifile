@@ -3,6 +3,7 @@
 *.class
 *.log
 sall
+jsall
 s[0-9]*
 _vb
 tags

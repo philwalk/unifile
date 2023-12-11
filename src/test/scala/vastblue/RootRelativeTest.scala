@@ -3,6 +3,7 @@ package vastblue.file
 import vastblue.Platform.*
 import vastblue.MountMapper.*
 import vastblue.file.Paths.*
+import vastblue.util.Utils.*
 import vastblue.util.PathExtensions
 
 import org.scalatest.BeforeAndAfter

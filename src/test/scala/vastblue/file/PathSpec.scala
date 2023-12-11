@@ -2,6 +2,8 @@ package vastblue.file
 
 import vastblue.Platform.*
 import vastblue.file.Paths.*
+
+import vastblue.util.Utils.*
 import vastblue.util.PathExtensions
 
 import org.scalatest._
@@ -133,7 +135,7 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter with PathExt
           val d        = file.dospath.toLowerCase
           val df       = normPath(d)
           val af       = normPath(a)
-          val sameFile = Paths.isSameFile(af, df)
+          val sameFile = isSameFile(af, df)
           if (sameFile || a == d) {
             println(s"a [$a] == d [$d]")
             assert(a == d)
@@ -223,7 +225,7 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter with PathExt
             val matchtag = "%-12s to %s".format(fname, v)
             it(s"round trip conversion should match [$matchtag]") {
               // val (k1, k2) = (f1.key, v.key)
-              val sameFile = Paths.isSameFile(f1, v)
+              val sameFile = isSameFile(f1, v)
               // must NOT do this: f1 != v (in Windows, relative paths NEVER equal absolute paths)
               if (!sameFile) {
                 System.err.printf("f1[%s]\nv[%s]\n", f1, v)

@@ -91,9 +91,10 @@ object Paths extends PathExtensions {
     p
   }
 
-  lazy val fileRoots: List[String] = JFile.listRoots.toList.map { (f: JFile) =>
-    f.toString
+  lazy val fileRoots: List[String] = {
+    JFile.listRoots.toList.map { (f: JFile) => f.toString }
   }
+
   // this may be needed to replace `def canExist` in vastblue.os
   lazy val driveLettersLc: List[String] = {
 //    val values = mountMap.values.toList
@@ -131,32 +132,6 @@ object Paths extends PathExtensions {
   } else {
     str
   }
-
-  def isSameFile(_p1: Path, _p2: Path): Boolean = {
-    val cs1 = dirIsCaseSensitive(_p1)
-    val cs2 = dirIsCaseSensitive(_p2)
-    if (cs1 != cs2) {
-      false // not the same file
-    } else {
-      val p1 = _p1.toAbsolutePath.normalize
-      val p2 = _p2.toAbsolutePath.normalize
-      // JFiles.isSameFile(p1, p2) // requires both files to exist (else crashes)
-      val abs1 = p1.toString
-      val abs2 = p2.toString
-      if (cs1) {
-        abs1 == abs2
-      } else {
-        val b1 = abs1.equalsIgnoreCase(abs2)
-        val b2 = abs1.toLowerCase == abs2.toLowerCase
-        assert(b1 == b2)
-        b2
-      }
-    }
-  }
-
-  lazy val herepath: Path = normPath(sys.props("user.dir"))
-
-  def here = herepath.toString.replace('\\', '/')
 
   lazy val LetterPath = """([a-zA-Z]):([$\\/a-zA-Z_0-9]*)""".r
 
@@ -296,57 +271,6 @@ object Paths extends PathExtensions {
   case Some(str) => str
   }
 
-  def normPath(_pathstr: String): Path = {
-    val jpath: Path = _pathstr match {
-    case "~" => JPaths.get(sys.props("user.dir"))
-    case _   => JPaths.get(_pathstr)
-    }
-    normPath(jpath)
-  }
-  def normPath(path: Path): Path = {
-    try {
-      val s = path.toString
-      if (s.length == 2 && s.take(2).endsWith(":")) {
-        _pwd
-      } else {
-        path.toAbsolutePath.normalize
-      }
-    } catch {
-      case e: java.io.IOError =>
-        path
-    }
-  }
-
-  // This is limited, in order to work on Windows, which is not Posix-Compliant.
-  def _chmod(path: Path, permissions: String = "rw", allusers: Boolean = true): Boolean = {
-    val file = path.toFile
-    // set application user permissions
-    val x = permissions.contains("x") || file.canExecute
-    val r = permissions.contains("r") || file.canRead
-    val w = permissions.contains("w") || file.canWrite
-
-    var ok = true
-    ok &&= file.setExecutable(x)
-    ok &&= file.setReadable(r)
-    ok &&= file.setWritable(w)
-    if (allusers) {
-      // change permission for all users
-      ok &&= file.setExecutable(x, false)
-      ok &&= file.setReadable(r, false)
-      ok &&= file.setWritable(w, false)
-    }
-    ok
-  }
-
-  def sameFile(s1: String, s2: String): Boolean = {
-    s1 == s2 || {
-      // this addresses filesystem case-sensitivity
-      // must NOT call get() from this object (stack overflow)
-      val p1 = java.nio.file.Paths.get(s1).toAbsolutePath
-      val p2 = java.nio.file.Paths.get(s2).toAbsolutePath
-      p1 == p2
-    }
-  }
   // return drive letter, segments
   def pathSegments(path: String): (String, Seq[String]) = {
     // remove windows drive letter, if present
@@ -364,40 +288,4 @@ object Paths extends PathExtensions {
     }
   }
 
-  // only verified on linux and Windows 11
-  def dirIsCaseSensitiveUniversal(dir: JPath): Boolean = {
-    require(dir.toFile.isDirectory, s"not a directory [$dir]")
-    val pdir = dir.toAbsolutePath.toString
-    val p1   = Paths.get(pdir, "A")
-    val p2   = Paths.get(pdir, "a")
-    p1.toAbsolutePath == p2.toAbsolutePath
-  }
-
-//  in Windows 10+, per-directory case-sensitive filesystem is enabled or not.
-//  def dirIsCaseSensitive(p: Path): Boolean = {
-//    val s = p.toString.replace('\\', '/')
-//    val cmd = Seq("fsutil.exe", "file", "queryCaseSensitiveInfo", s)
-//    // windows filesystem case-sensitivity is not common (yet?)
-//    cmd.lazyLines_!.mkString("").trim.endsWith(" enabled")
-//  }
-
-  // verified on linux and Windows 11; still needed: Darwin/OSX
-  def dirIsCaseSensitive(p: Path): Boolean = {
-    val pf = p.toAbsolutePath.normalize.toFile
-    if (!pf.exists) {
-      !(_isWindows || _isDarwin)
-    } else {
-      val dirpath: Path = if (pf.isFile) {
-        pf.getParent.toPath
-      } else if (pf.isDirectory) {
-        p
-      } else {
-        sys.error(s"internal error: [$p]")
-      }
-      val dir = dirpath.toString
-      val p1  = Paths.get(dir, "A")
-      val p2  = Paths.get(dir, "a")
-      p1.toAbsolutePath != p2.toAbsolutePath
-    }
-  }
 }
