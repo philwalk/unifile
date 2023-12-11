@@ -1,56 +1,26 @@
 package vastblue.file
 
+import vastblue.Platform
 import vastblue.Platform.*
 import vastblue.file.ProcfsPaths.*
+import vastblue.util.PathExtensions
+
 import java.io.{File => JFile}
 import java.nio.file.{Files => JFiles, Paths => JPaths, Path => JPath}
 import java.io.{BufferedReader, FileReader}
-import scala.collection.immutable.ListMap
 import scala.util.Using
 import scala.jdk.CollectionConverters.*
 
 /*
- * Enable access to the synthetic winshell filesystem provided by
- * Cygwin64, MinGW64, Msys2, Gitbash, etc.
- *
- * Permits writing of scripts that are portable portable between
- * Linux, Osx, and windows shell environments.
- *
- * To create a winshell-friendly client script:
- *    +. import vastblue.file.Paths rather than java.nio.file.Paths
- *    +. call `findInPath(binaryPath)` or `where(binaryPath)` to find executable
- *
- * The following are used to navigate the synthetic winshell filesystem.
- *
- * bashPath: String    : valid path to the bash executable
- * shellBaseDir: String: root directory of the synthetic filesystem
- * unamefull: String   : value reported by `uname -a`
- * To identify the environment:
- * isCygwin: Boolean   : true if running cygwin64
- * isMsys64: Boolean   : true if running msys64
- * isMingw64: Boolean  : true if running mingw64
- * isGitSdk64: Boolean : true if running gitsdk
- * isMingw64: Boolean  : true if running mingw64
- * isWinshell
- * wsl: Boolean
- *
- * NOTES:
- * Treats the Windows default drive root (typically C:\) as the filesystem root.
- * Other drives may be made available by symlink off of the filesystem root.
- * Shell environment (/cygwin64, /msys64, etc.) must be on the default drive.
- *
- * The preferred way to find an executable on the PATH (very fast):
- *   val p: Path = findInPath(binaryName)
- *
- * A Fallback method (much slower):
- *   val path: String = whichPath(binaryName)
- *
- * Most of the magic is available via Paths.get(), defined below.
- *
- * How to determine where msys2/ mingw64 / cygwin64 is installed?
- * best answer: norm(where(s"bash${exeSuffix}")).replaceFirst("/bin/bash.*", "")
+ * An alternative to `java.nio.file.Paths.get()` that understands Cygwin64, MinGW64, Msys2, Gitbash, paths.
+ * This version returns an instance of `java.nio.file.Path` with path strings converted to Windows equivalent.
+ * On Windows:
+ *   + translate posix paths to Windows equivalent, if necessary
+ * On non-Windows platforms:
+ *   + forwards request to `java.nio.file.Paths.get()`  
+ *   + forwards request to `java.nio.file.Paths.get()`  
  */
-object Paths {
+object Paths extends PathExtensions {
   private var hook = 0
   type Path = java.nio.file.Path
 
@@ -63,11 +33,43 @@ object Paths {
     get(s"$dirpath/$subpath")
   }
 
-  // There are three supported filename patterns:
-  //    non-windows (posix by default; a tricky case in Windows, easy elsewhere)
-  //    windows drive-relative path, with default drive, e.g., /Windows/system32
-  //    windows absolute path, e.g., c:/Windows/system32
-  // Windows paths are normalized to forward slash
+  /*
+   * Concepts:
+   * Windows paths are internally normalized with forward slash.
+   *
+   * Drive Relative Path:
+   *   any path starting with a slash or backslash
+   *   effectively absolute (uniquely determines an absolute path)
+   *
+   * Explicitly-Relative Path:
+   *   path without a leading forward slash or a drive letter
+   *   such as ".", "./dir", "doc/text.txt", etc.
+   *
+   * Supported filename patterns:
+   *
+   * Non-windows platforms:
+   *   all paths forwarded
+   *
+   * Windows absolute paths:
+   *   all paths forwarded
+   *
+   * Windows fully-relative paths (excluding drive-relative)
+   * Windows drive-relative paths converted:
+   *   + if path prefix matches a mountMap entry, replace it
+   *     /data               => C:/data                      <<-- "C:\Data" mounted to "/data"
+   *     /c/Windows/system32 => C:/Windows/system32          <<-- cygdrive == '/'
+   *     /cygdrive/c/Windows/system32 => C:/Windows/system32 <<-- cygdrive == '/cygdrive'
+   *
+   *   + files below (e.g.,) C:/msys64 treated as virtual mountMap
+   *     /etc/fstab => C:/msys64/etc/fstab
+   *     read-only mapping (non-existent files not in scope)
+   *
+   *   + otherwise:
+   *     /Windows/system32 => C:/Windows/system32
+   *
+   * NOTE: support for "/proc/meminfo" and other procfs files by spawning `cat`.
+   * See `vastblue.file.ProcfsPath` for details.
+   */
   def get(_fnamestr: String): Path = {
     val _pathstr = derefTilde(_fnamestr) // replace leading tilde with sys.props("user.home")
 
@@ -75,18 +77,35 @@ object Paths {
 
     val p: Path = {
       if (psxStr.startsWith(pwdnorm)) {
-        // relativize to "."
-        val rel = psxStr.replace(pwdnorm, ".")
+        val rel = psxStr.replace(pwdnorm, ".") // convert to "./" format
         JPaths.get(rel)
       } else if (psxStr.isEmpty || psxStr.startsWith(".")) {
-        JPaths.get(psxStr) // includes ..
+        JPaths.get(psxStr) // includes ".", "..", "" 
       } else if (_notWindows || hasDriveLetter(psxStr) || psxStr.matches("/proc(/.*)?")) {
         JPaths.get(psxStr)
       } else {
-        pathsGetWindows(_fnamestr)
+        // most of the complexity is here:
+        Platform.pathsGetWindows(_fnamestr)
       }
     }
     p
+  }
+
+  lazy val fileRoots: List[String] = JFile.listRoots.toList.map { (f: JFile) =>
+    f.toString
+  }
+  // this may be needed to replace `def canExist` in vastblue.os
+  lazy val driveLettersLc: List[String] = {
+//    val values = mountMap.values.toList
+    val letters = {
+      for {
+        dl <- fileRoots.map {
+          _.take(2)
+        }
+        if dl.drop(1) == ":"
+      } yield dl.toLowerCase
+    }.distinct
+    letters
   }
 
   def driveRelative(p: Path): Boolean = {
@@ -105,13 +124,6 @@ object Paths {
   def isAlpha(c: Char): Boolean = {
     (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
   }
-
-//  def jget(fnamestr: String): Path = {
-//    if (_isWindows && fnamestr.contains("::") || fnamestr.contains(";")) {
-//      sys.error(s"internal error: called JPaths.get with a filename containing a semicolon")
-//    }
-//    JPaths.get(fnamestr)
-//  }
 
   def derefTilde(str: String): String = if (str.startsWith("~")) {
     // val uh = userhome
@@ -139,34 +151,6 @@ object Paths {
         assert(b1 == b2)
         b2
       }
-    }
-  }
-
-//  in Windows 10+, per-directory case-sensitive filesystem is enabled or not.
-//  def dirIsCaseSensitive(p: Path): Boolean = {
-//    val s = p.toString.replace('\\', '/')
-//    val cmd = Seq("fsutil.exe", "file", "queryCaseSensitiveInfo", s)
-//    // windows filesystem case-sensitivity is not common (yet?)
-//    cmd.lazyLines_!.mkString("").trim.endsWith(" enabled")
-//  }
-
-  // verified on linux and Windows 11; still needed: Darwin/OSX
-  def dirIsCaseSensitive(p: Path): Boolean = {
-    val pf = p.toAbsolutePath.normalize.toFile
-    if (!pf.exists) {
-      !(_isWindows || _isDarwin)
-    } else {
-      val dirpath: Path = if (pf.isFile) {
-        pf.getParent.toPath
-      } else if (pf.isDirectory) {
-        p
-      } else {
-        sys.error(s"internal error: [$p]")
-      }
-      val dir = dirpath.toString
-      val p1  = Paths.get(dir, "A")
-      val p2  = Paths.get(dir, "a")
-      p1.toAbsolutePath != p2.toAbsolutePath
     }
   }
 
@@ -231,23 +215,6 @@ object Paths {
     }
   }
 
-  lazy val fileRoots: List[String] = JFile.listRoots.toList.map { (f: JFile) =>
-    f.toString
-  }
-  // this may be needed to replace `def canExist` in vastblue.os
-  lazy val driveLettersLc: List[String] = {
-//    val values = mountMap.values.toList
-    val letters = {
-      for {
-        dl <- fileRoots.map {
-          _.take(2)
-        }
-        if dl.drop(1) == ":"
-      } yield dl.toLowerCase
-    }.distinct
-    letters
-  }
-
 
   def dirExists(pathstr: String): Boolean = {
     dirExists(Paths.get(pathstr))
@@ -276,14 +243,14 @@ object Paths {
   def exists(path: String): Boolean = {
     exists(Paths.get(path))
   }
-  def exists(p: Path): Boolean = {
-    canExist(p) && {
-      p.toFile match {
-      case f if f.isDirectory => true
-      case f => f.exists
-      }
-    }
-  }
+//  def exists(p: Path): Boolean = {
+//    canExist(p) && {
+//      p.toFile match {
+//      case f if f.isDirectory => true
+//      case f => f.exists
+//      }
+//    }
+//  }
 
   // drop drive letter and normalize backslash
   def dropshellDrive(str: String)  = str.replaceFirst(s"^${shellDrive}:", "")
@@ -297,12 +264,10 @@ object Paths {
     }
   lazy val PosixCygdrive = "[\\/]([a-z])([\\/].*)?".r
 
-  def stdpath(path: Path): String = path.toString.replace('\\', '/')
-  def stdpath(str: String)        = str.replace('\\', '/')
-  def norm(p: Path): String       = p.toString.replace('\\', '/')
-  def norm(str: String) =
-    str.replace('\\', '/') // Paths.get(str).normalize.toString.replace('\\', '/')
-
+//  def stdpath(path: Path): String = path.toString.replace('\\', '/')
+//  def stdpath(str: String)        = str.replace('\\', '/')
+//  def norm(p: Path): String       = p.toString.replace('\\', '/')
+//  def norm(str: String) = str.replace('\\', '/')
 
   def eprint(xs: Any*): Unit = {
     System.err.print("%s".format(xs: _*))
@@ -373,14 +338,6 @@ object Paths {
     ok
   }
 
-  // only verified on linux and Windows 11
-  def dirIsCaseSensitiveUniversal(dir: JPath): Boolean = {
-    require(dir.toFile.isDirectory, s"not a directory [$dir]")
-    val pdir = dir.toAbsolutePath.toString
-    val p1   = Paths.get(pdir, "A")
-    val p2   = Paths.get(pdir, "a")
-    p1.toAbsolutePath == p2.toAbsolutePath
-  }
   def sameFile(s1: String, s2: String): Boolean = {
     s1 == s2 || {
       // this addresses filesystem case-sensitivity
@@ -404,6 +361,43 @@ object Paths {
       (dl, Seq(pathRelative))
     case _ =>
       (dl, pathRelative.split("[/\\\\]+").filter { _.nonEmpty }.toSeq)
+    }
+  }
+
+  // only verified on linux and Windows 11
+  def dirIsCaseSensitiveUniversal(dir: JPath): Boolean = {
+    require(dir.toFile.isDirectory, s"not a directory [$dir]")
+    val pdir = dir.toAbsolutePath.toString
+    val p1   = Paths.get(pdir, "A")
+    val p2   = Paths.get(pdir, "a")
+    p1.toAbsolutePath == p2.toAbsolutePath
+  }
+
+//  in Windows 10+, per-directory case-sensitive filesystem is enabled or not.
+//  def dirIsCaseSensitive(p: Path): Boolean = {
+//    val s = p.toString.replace('\\', '/')
+//    val cmd = Seq("fsutil.exe", "file", "queryCaseSensitiveInfo", s)
+//    // windows filesystem case-sensitivity is not common (yet?)
+//    cmd.lazyLines_!.mkString("").trim.endsWith(" enabled")
+//  }
+
+  // verified on linux and Windows 11; still needed: Darwin/OSX
+  def dirIsCaseSensitive(p: Path): Boolean = {
+    val pf = p.toAbsolutePath.normalize.toFile
+    if (!pf.exists) {
+      !(_isWindows || _isDarwin)
+    } else {
+      val dirpath: Path = if (pf.isFile) {
+        pf.getParent.toPath
+      } else if (pf.isDirectory) {
+        p
+      } else {
+        sys.error(s"internal error: [$p]")
+      }
+      val dir = dirpath.toString
+      val p1  = Paths.get(dir, "A")
+      val p2  = Paths.get(dir, "a")
+      p1.toAbsolutePath != p2.toAbsolutePath
     }
   }
 }

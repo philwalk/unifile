@@ -4,27 +4,23 @@ import java.io.{File => JFile}
 import java.nio.file.{FileSystemException, Path}
 import java.nio.file.{Files => JFiles, Paths => JPaths}
 import java.io.{PrintWriter, OutputStreamWriter, FileWriter}
-import java.io.{BufferedReader, FileReader}
-import scala.collection.immutable.ListMap
-import scala.util.Using
-import scala.util.control.Breaks._
-import scala.sys.process._
+import scala.util.control.Breaks.*
+import scala.sys.process.*
 import scala.collection.mutable.{Map => MutMap}
 import scala.jdk.CollectionConverters._
 import java.nio.charset.Charset
 import java.nio.charset.Charset.*
-import vastblue.DriveRoot
-import vastblue.DriveRoot._
+import vastblue.DriveRoot.*
 import vastblue.file.Paths
+import vastblue.util.PathExtensions
 
 /*
  * Supported environments:
  * Unix / Linux / OSX, Windows shell environments (CYGWIN64, MINGW64,
  * MSYS2, GIT-BASH, etc.).
  */
-object Platform {
+object Platform extends PathExtensions {
   private var hook = 0
-  def Paths = vastblue.file.Paths
   
   // cygdrive is mutable
   private var _cygdrive: String = "/" // default in cygwin: "/cygdrive", msys: "/"
@@ -34,6 +30,7 @@ object Platform {
   def DefaultCharset = defaultCharset
   type Path = java.nio.file.Path
 
+  /*
   extension(s: String) {
     def posx: String = s.replace('\\', '/')
     def jpath: Path = JPaths.get(s)
@@ -87,13 +84,7 @@ object Platform {
     def files: Seq[JFile] = f.listFiles.toSeq
     def paths: Seq[Path] = f.listFiles.toSeq.map { _.toPath }
   }
-
-  sealed trait PathType(s: String, p: Path)
-  case class PathRel(s: String, p: Path) extends PathType(s, p)
-  case class PathAbs(s: String, p: Path) extends PathType(s, p)
-  case class PathDrv(s: String, p: Path) extends PathType(s, p)
-  case class PathPsx(s: String, p: Path) extends PathType(s, p)
-  case class PathBad(s: String, p: Path) extends PathType(s, p)
+  */
 
   def _stdpath(p: Path): String = {
     _stdpath(p.abs)
@@ -168,74 +159,6 @@ object Platform {
   def isAlpha(c: Char): Boolean = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
   def scriptName: String = Script.scriptName
   def scriptPath: Path   = Script.scriptPath
-
-  def windowsPathType(str: String): PathType = {
-    require(_isWindows)
-    val psxStr = str.posx match {
-    case s if s.startsWith("~") =>
-      s"$_userHome${s.drop(1)}"
-    case s =>
-      s
-    }
-    psxStr.take(3).toSeq match {
-    case Seq('/') =>
-      PathPsx(psxStr, JPaths.get(_shellRoot))
-    case Seq(a, ':', _) =>
-      if (isAlpha(a)) {
-        // val drive = s"a:"
-        PathAbs(psxStr, JPaths.get(psxStr))
-      } else {
-        PathBad(psxStr, BadPath(psxStr))
-      }
-
-    case Seq(a, ':') =>
-      if (isAlpha(a)) {
-        val drive = s"$a:"
-        PathDrv(psxStr, JPaths.get(psxStr))
-      } else {
-        PathBad(psxStr, BadPath(psxStr))
-      }
-
-    case Seq('/', b)  =>
-      if (isAlpha(b)) {
-        val drive = s"$b:/"
-        PathDrv(psxStr, JPaths.get(drive))
-      } else {
-        PathBad(psxStr, BadPath(psxStr))
-      }
-    case Seq('/', _, _) =>
-      // need to do cygpath -m psxStr
-      val cpath = cygPath(psxStr).jpath
-      PathPsx(psxStr, cpath)
-
-    case Seq(a, _, _) if isAlpha(a) =>
-      PathRel(psxStr, JPaths.get(psxStr))
-    }
-  }
-
-  def cygPath(psxStr: String): String = {
-    _exec("cygpath", "-m", psxStr)
-  }
-
-  def pathsGetWindows(psxStr: String): Path = {
-    if (!_isWindows) {
-      JPaths.get(psxStr)
-    } else {
-      windowsPathType(psxStr) match {
-      case pt: PathAbs =>
-        pt.p
-      case pt: PathDrv =>
-        // tricky ..
-        pt.p.toAbsolutePath // drive only resolves to `pwd`
-      case pt: PathRel =>
-        pt.p
-      case pt: PathBad =>
-        BadPath(psxStr)
-      case pt: PathPsx =>
-        pt.p
-      }
-    }
-  }
 
   // returns a String
   def _exec(args: String*): String = {
@@ -815,6 +738,84 @@ object Platform {
       if (lcname != "stdout") {
         // don't close stdout!
         writer.close()
+      }
+    }
+  }
+
+  sealed trait PathType(s: String, p: Path)
+  case class PathRel(s: String, p: Path) extends PathType(s, p)
+  case class PathAbs(s: String, p: Path) extends PathType(s, p)
+  case class PathDrv(s: String, p: Path) extends PathType(s, p)
+  case class PathPsx(s: String, p: Path) extends PathType(s, p)
+  case class PathBad(s: String, p: Path) extends PathType(s, p)
+
+  def windowsPathType(str: String): PathType = {
+    require(_isWindows)
+    val psxStr = str.posx match {
+    case s if s.startsWith("~") =>
+      s"$_userHome${s.drop(1)}"
+    case s =>
+      s
+    }
+    psxStr.take(3).toSeq match {
+    case Seq('/') =>
+      PathPsx(psxStr, JPaths.get(_shellRoot))
+    case Seq(a, ':', _) =>
+      if (isAlpha(a)) {
+        // val drive = s"a:"
+        PathAbs(psxStr, JPaths.get(psxStr))
+      } else {
+        PathBad(psxStr, BadPath(psxStr))
+      }
+
+    case Seq(a, ':') =>
+      if (isAlpha(a)) {
+        val drive = s"$a:"
+        PathDrv(psxStr, JPaths.get(psxStr))
+      } else {
+        PathBad(psxStr, BadPath(psxStr))
+      }
+
+    case Seq('/', b)  =>
+      if (isAlpha(b)) {
+        val drive = s"$b:/"
+        PathDrv(psxStr, JPaths.get(drive))
+      } else {
+        PathBad(psxStr, BadPath(psxStr))
+      }
+    case Seq('/', _, _) =>
+      // need to do cygpath -m psxStr
+      val cpath = cygPath(psxStr).jpath
+      PathPsx(psxStr, cpath)
+
+    case Seq(a, _, _) if isAlpha(a) =>
+      PathRel(psxStr, JPaths.get(psxStr))
+    }
+  }
+
+  def cygPath(psxStr: String): String = {
+    _exec("cygpath", "-m", psxStr)
+  }
+
+  /*
+   * By default, converts by spawning cygpath.exe
+   */
+  def pathsGetWindows(psxStr: String): Path = {
+    if (!_isWindows) {
+      JPaths.get(psxStr)
+    } else {
+      windowsPathType(psxStr) match {
+      case pt: PathAbs =>
+        pt.p
+      case pt: PathDrv =>
+        // tricky ..
+        pt.p.toAbsolutePath // drive only resolves to `pwd`
+      case pt: PathRel =>
+        pt.p
+      case pt: PathBad =>
+        BadPath(psxStr)
+      case pt: PathPsx =>
+        pt.p
       }
     }
   }

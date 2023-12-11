@@ -2,12 +2,12 @@ package vastblue.file
 
 import vastblue.Platform.*
 import vastblue.file.Paths.*
-
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
+import vastblue.util.PathExtensions
 
-class PathnameTest extends AnyFunSpec with Matchers with BeforeAndAfter {
+class PathnameTest extends AnyFunSpec with Matchers with BeforeAndAfter with PathExtensions {
   var hook = 0
   val verbose = Option(System.getenv("VERBOSE_TESTS")).nonEmpty
 

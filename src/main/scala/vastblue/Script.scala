@@ -3,8 +3,9 @@ package vastblue
 import vastblue.Platform.*
 import vastblue.file.Paths
 import java.nio.file.Path
+import vastblue.util.PathExtensions
 
-object Script {
+object Script extends PathExtensions {
 
   def scriptProp(e: Exception = new Exception()): String = {
     def stackHead: String   = e.getStackTrace.head.getFileName

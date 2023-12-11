@@ -11,121 +11,79 @@ import java.nio.charset.Charset
 import vastblue.DriveRoot._
 import vastblue.Platform.*
 import vastblue.file.Paths.canExist
+import vastblue.util.PathExtensions
 
 /*
  * Supported environments:
  * Unix / Linux / OSX, Windows shell environments (CYGWIN64, MINGW64,
  * MSYS2, GIT-BASH, etc.).
  */
-object PlatformExtra {
+object MountMapper extends PathExtensions {
   private var hook = 0
 
-//  def checkPath(dirs: Seq[String], prog: String): String = {
-//    dirs.map { dir => JPaths.get(s"$dir/$prog") }.find { (p: Path) =>
-//      p.toFile.isFile
-//    } match {
-//    case None    => ""
-//    case Some(p) => p.normalize.toString.replace('\\', '/')
-//    }
-//  }
-//
-//  def whichInPath(prog: String): String = {
-//    checkPath(envPath, prog)
-//  }
-//  def which(cmdname: String) = {
-//    val cname = if (!exeSuffix.isEmpty && !cmdname.endsWith(exeSuffix)) {
-//      s"${cmdname}${exeSuffix}"
-//    } else {
-//      cmdname
-//    }
-//    whichInPath(cname)
-//  }
+  // Mount entries cause things to appear below C:/msys64/ directory
+  // /data and /etc appear to have the same parent directory, but:
+  //    /data is C:/data
+  //    /etc is c:/msys64/etc
+  // /etc is not mounted, but also must be translated a-la cygpath:
+  //    translate mounted entry, if present
+  //    otherwise, replace '/' with C:/msys64
+  lazy val etcFstab   = s"$posixroot/etc/fstab".replaceAll("[\\/]+", "/")
 
-//  def verbyshow(str: String): Unit = if (_verbose) _eprintf("verby[%s]\n", str)
+  def readFstabEntries(fstabPath: String): Seq[FsEntry] = {
+    val f = JPaths.get(fstabPath)
 
-//  def dirExists(pathstr: String): Boolean = {
-//    dirExists(JPaths.get(pathstr))
-//  }
-//  def dirExists(path: Path): Boolean = {
-//    canExist(path) && JFiles.isDirectory(path)
-//  }
-
-  def pathDriveletter(ps: String): DriveRoot = {
-    ps.take(2) match {
-    case str if str.drop(1) == ":" =>
-      DriveRoot(str.take(2))
-    case _ =>
-      DriveRoot("")
-    }
-  }
-  def pathDriveletter(p: Path): DriveRoot = {
-    pathDriveletter(p.toAbsolutePath.toString)
-  }
-
-  lazy val driveLetters: List[DriveRoot] = {
-    val values = mountMap.values.toList
-    val letters = {
+    val entries = if (!f.isFile) {
+      System.err.printf("not found: %f\n", f.posx)
+      Nil
+    } else {
+      val lines = readLines(f)
+        .map {
+          _.trim.replaceAll("\\s*#.*", "")
+        }
+        .filter {
+          !_.trim.isEmpty
+        }
       for {
-        dl <- values.map { _.take(2) }
-        if dl.drop(1) == ":"
-      } yield DriveRoot(dl)
-    }.distinct
-    letters
-  }
-
-  /*
-  def canExist(p: Path): Boolean = {
-    val pathdrive: DriveRoot = pathDriveletter(p)
-    pathdrive.string match {
-    case "" =>
-      true
-    case letter =>
-      driveLetters.contains(letter)
+        trimmed <- lines
+        ff = trimmed.split("\\s+", -1)
+        if ff.size >= 3
+        Array(local, posix, ftype) = ff.take(3).map { _.trim }
+        dir                        = if (ftype == "cygdrive") "cygdrive" else local
+      } yield FsEntry(dir, posix, ftype)
     }
-  }
-  */
-
-  // fileExists() solves a Windows jvm problem:
-  // path.toFile.exists can be VEEERRRY slow for files on a non-existent drive (e.g., q:/).
-  def fileExists(p: Path): Boolean = {
-    canExist(p) &&
-    p.toFile.exists
+    entries
   }
 
-  def _exists(path: String): Boolean = {
-    JPaths.get(path).exists
+  // mount map 
+  lazy val mountMap = {
+    readFstabEntries(etcFstab).map { (e: FsEntry) => (e.posix -> e.dir) }.toMap
+  }
+  lazy val (_cygdrive: String, posix2localMountMap: Map[String, String], reverseMountMap: Map[String, String]) = {
+    val (cygdrive, posix2local, reverseMap) = consumeMountMap()
+    (cygdrive, posix2local, reverseMap)
   }
 
-  def _exists(p: Path): Boolean = {
-    canExist(p) && {
-      p.toFile match {
-      case f if f.isDirectory => true
-      case f                  => f.exists
-      }
+  def consumeMountMap(mountMap: Map[String, String] = mountMap): (String, Map[String, String], Map[String, String]) = {
+    def emptyMap = Map.empty[String, String]
+    if (_notWindows || _shellRoot.isEmpty) {
+      ("", emptyMap, emptyMap)
+    } else {
+      val mmap = mountMap.toList.map { case (k: String, v: String) => (k.toLowerCase -> v) }.toMap
+      val rmap = mountMap.toList.map { case (k: String, v: String) => (v.toLowerCase -> k) }.toMap
+      val cygdrive = rmap.get("cygdrive").getOrElse("/")
+
+      vastblue.Platform.cygdrive = cygdrive // update Platform.cygdrive
+      (cygdrive, mmap, rmap)
     }
   }
 
-  // drop drive letter and normalize backslash
-  def dropDefaultDrive(str: String) = str.replaceFirst(s"^${workingDrive}", "")
-  def dropDriveLetter(str: String)  = str.replaceFirst("^[a-zA-Z]:", "")
-  def asPosixPath(str: String)      = dropDriveLetter(str).replace('\\', '/')
-//  def norm(p: Path): String         = p.toString.replace('\\', '/')
-
-  def getPath(dir: Path, tail: String): Path = {
-    JPaths.get(dir.toString, tail)
-  }
-  def etcdir = JPaths.get(posixroot, "etc") match {
-  case p if p.isSymbolicLink =>
-    p.toRealPath()
-  case p =>
-    p
+  case class FsEntry(dir: String, posix: String, ftype: String) {
+    override def toString = "%-22s, %-18s, %s".format(dir, posix, ftype)
   }
 
-  def defaultCygdrivePrefix = _unameLong match {
-  case "cygwin" => "/cygdrive"
-  case _        => ""
-  }
-  
+  lazy val cygdrivePrefix = reverseMountMap.get("cygdrive").getOrElse("")
+
   lazy val (_mountMap, cygdrive2root) = {
     if (_verbose) printf("etcdir[%s]\n", etcdir)
     val fpath = JPaths.get(s"$etcdir/fstab")
@@ -191,25 +149,6 @@ object PlatformExtra {
     (localMountMap, cd2r)
   }
 
-  lazy val cygdrivePrefix = reverseMountMap.get("cygdrive").getOrElse("")
-
-  def fileLines(f: JFile): Seq[String] = {
-    Using.resource(new BufferedReader(new FileReader(f))) { reader =>
-      Iterator.continually(reader.readLine()).takeWhile(_ != null).toSeq
-    }
-  }
-
-  lazy val wsl: Boolean = {
-    val f                       = JPaths.get("/proc/version").toFile
-    def lines: Seq[String]      = fileLines(f)
-    def contentAsString: String = lines.mkString("\n")
-    val test0                   = f.isFile && contentAsString.contains("Microsoft")
-    val test1                   = _unameLong.contains("microsoft")
-    test0 || test1
-  }
-
-  def ostype = _uname("-s")
-
   // this may be needed to replace `def canExist` in vastblue.os
   lazy val driveLettersLc: List[String] = {
     val values = mountMap.values.toList
@@ -222,7 +161,39 @@ object PlatformExtra {
     letters
   }
 
+  def etcdir = JPaths.get(posixroot, "etc") match {
+  case p if p.isSymbolicLink =>
+    p.toRealPath()
+  case p =>
+    p
+  }
+
+  def defaultCygdrivePrefix = _unameLong match {
+  case "cygwin" => "/cygdrive"
+  case _        => ""
+  }
+  
+  def fileLines(f: JFile): Seq[String] = {
+    Using.resource(new BufferedReader(new FileReader(f))) { reader =>
+      Iterator.continually(reader.readLine()).takeWhile(_ != null).toSeq
+    }
+  }
+
+  /*
+  lazy val wsl: Boolean = {
+    val f                       = JPaths.get("/proc/version").toFile
+    def lines: Seq[String]      = fileLines(f)
+    def contentAsString: String = lines.mkString("\n")
+    val test0                   = f.isFile && contentAsString.contains("Microsoft")
+    val test1                   = _unameLong.contains("microsoft")
+    test0 || test1
+  }
+  */
+
+  def ostype = _uname("-s")
+
   // useful for benchmarking functions
+  /*
   def time(n: Int, func: (String) => Any): Unit = {
     val t0 = System.currentTimeMillis
     for (i <- 0 until n) {
@@ -234,6 +205,7 @@ object PlatformExtra {
     val elapsed = System.currentTimeMillis - t0
     printf("%d iterations in %9.6f seconds\n", n * 2, elapsed.toDouble / 1000.0)
   }
+  */
 
   // TODO: for WSL, provide `wslpath`
   // by default, returns -m path
@@ -279,74 +251,6 @@ object PlatformExtra {
     }
     // replace multiple slashes with single slash
     cygMstr.replaceAll("//+", "/")
-  }
-
-  def fstabEntries: Seq[FsEntry] = {
-    val rr: String = posixroot
-    val etcFstab   = s"$rr/etc/fstab".replaceAll("[\\/]+", "/")
-    val f          = JPaths.get(etcFstab)
-    val entries = if (!f.isFile) {
-      Nil
-    } else {
-      val lines = readLines(f)
-        .map {
-          _.trim.replaceAll("\\s*#.*", "")
-        }
-        .filter {
-          !_.trim.isEmpty
-        }
-      for {
-        trimmed <- lines
-        ff = trimmed.split("\\s+", -1)
-        if ff.size >= 3
-        Array(local, posix, ftype) = ff.take(3).map { _.trim }
-        dir                        = if (ftype == "cygdrive") "cygdrive" else local
-      } yield FsEntry(dir, posix, ftype)
-    }
-    entries
-  }
-
-  // mount map 
-  lazy val mountMap = {
-    fstabEntries.map { (e: FsEntry) => (e.posix -> e.dir) }.toMap
-  }
-  lazy val (
-    _cygdrive: String,
-    posix2localMountMap: Map[String, String],
-    reverseMountMap: Map[String, String]
-  ) = {
-    def emptyMap = Map.empty[String, String]
-    if (_notWindows || _shellRoot.isEmpty) {
-      ("", emptyMap, emptyMap)
-    } else {
-      val mmap = mountMap.toList.map { case (k: String, v: String) => (k.toLowerCase -> v) }.toMap
-      val rmap = mountMap.toList.map { case (k: String, v: String) => (v.toLowerCase -> k) }.toMap
-
-      val cygdrive = rmap.get("cygdrive").getOrElse("") match {
-      case "/" =>
-        "/"
-      case "" =>
-        ""
-      case s =>
-        s"$s" // need trailing slash (why?)
-      }
-
-      // TODO: mount entries cause things to appear below C:/msys64/ directory
-      // subtlety: /data and /etc seem to have the same parent directory, but:
-      //    /data is C:/data
-      //    /etc is c:/msys64/etc
-      // /etc is not mounted, but also must be translated a-la cygpath:
-      // if mounted, apply mount;
-      // if `driveRelative`, replace '/' with C:/msys64
-
-      // lowercase keys to speed up map key searches
-      vastblue.Platform.cygdrive = cygdrive // notify Plat
-      (cygdrive, mmap, rmap)
-    }
-  }
-
-  case class FsEntry(dir: String, posix: String, ftype: String) {
-    override def toString = "%-22s, %-18s, %s".format(dir, posix, ftype)
   }
 
   lazy val DriveLetterColonPattern = "([a-zA-Z]):(.*)?".r
@@ -623,4 +527,98 @@ object PlatformExtra {
     mount
   }
 
+//  def checkPath(dirs: Seq[String], prog: String): String = {
+//    dirs.map { dir => JPaths.get(s"$dir/$prog") }.find { (p: Path) =>
+//      p.toFile.isFile
+//    } match {
+//    case None    => ""
+//    case Some(p) => p.normalize.toString.replace('\\', '/')
+//    }
+//  }
+//
+//  def whichInPath(prog: String): String = {
+//    checkPath(envPath, prog)
+//  }
+//  def which(cmdname: String) = {
+//    val cname = if (!exeSuffix.isEmpty && !cmdname.endsWith(exeSuffix)) {
+//      s"${cmdname}${exeSuffix}"
+//    } else {
+//      cmdname
+//    }
+//    whichInPath(cname)
+//  }
+
+//  def verbyshow(str: String): Unit = if (_verbose) _eprintf("verby[%s]\n", str)
+
+//  def dirExists(pathstr: String): Boolean = {
+//    dirExists(JPaths.get(pathstr))
+//  }
+//  def dirExists(path: Path): Boolean = {
+//    canExist(path) && JFiles.isDirectory(path)
+//  }
+
+  def pathDriveletter(ps: String): DriveRoot = {
+    ps.take(2) match {
+    case str if str.drop(1) == ":" =>
+      DriveRoot(str.take(2))
+    case _ =>
+      DriveRoot("")
+    }
+  }
+  def pathDriveletter(p: Path): DriveRoot = {
+    pathDriveletter(p.toAbsolutePath.toString)
+  }
+
+  lazy val driveLetters: List[DriveRoot] = {
+    val values = mountMap.values.toList
+    val letters = {
+      for {
+        dl <- values.map { _.take(2) }
+        if dl.drop(1) == ":"
+      } yield DriveRoot(dl)
+    }.distinct
+    letters
+  }
+
+  /*
+  def canExist(p: Path): Boolean = {
+    val pathdrive: DriveRoot = pathDriveletter(p)
+    pathdrive.string match {
+    case "" =>
+      true
+    case letter =>
+      driveLetters.contains(letter)
+    }
+  }
+  */
+
+  // fileExists() solves a Windows jvm problem:
+  // path.toFile.exists can be VEEERRRY slow for files on a non-existent drive (e.g., q:/).
+  def fileExists(p: Path): Boolean = {
+    canExist(p) &&
+    p.toFile.exists
+  }
+
+  def _exists(path: String): Boolean = {
+    JPaths.get(path).exists
+  }
+
+  def _exists(p: Path): Boolean = {
+    canExist(p) && {
+      p.toFile match {
+      case f if f.isDirectory => true
+      case f                  => f.exists
+      }
+    }
+  }
+
+  // drop drive letter and normalize backslash
+  def dropDefaultDrive(str: String) = str.replaceFirst(s"^${workingDrive}", "")
+  def dropDriveLetter(str: String)  = str.replaceFirst("^[a-zA-Z]:", "")
+  def asPosixPath(str: String)      = dropDriveLetter(str).replace('\\', '/')
+//  def norm(p: Path): String         = p.toString.replace('\\', '/')
+
+  def getPath(dir: Path, tail: String): Path = {
+    JPaths.get(dir.toString, tail)
+  }
 }

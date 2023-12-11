@@ -1,12 +1,13 @@
 package vastblue
 
-import vastblue.PlatformExtra.*
+import vastblue.MountMapper.*
 import vastblue.file.Paths
 import vastblue.file.Paths.*
 import vastblue.Platform.*
 import org.junit.Test
+import vastblue.util.PathExtensions
 
-class TestUniPath {
+class TestUniPath extends PathExtensions {
   val verbose = Option(System.getenv("VERBOSE_TESTS")).nonEmpty
 
   def testArgs = Seq.empty[String]
@@ -45,6 +46,8 @@ class TestUniPath {
     for ((key, valu) <- reverseMountMap) {
       printf("mount %-22s -> %s\n", key, valu)
     }
-    assert(_bashPath.exists == _bashPath.isFile, s"bash not found")
+    val bpExists: Boolean = _bashPath.exists
+    val bpIsFile: Boolean = _bashPath.isFile
+    assert(bpExists == bpIsFile, s"bash not found")
   }
 }

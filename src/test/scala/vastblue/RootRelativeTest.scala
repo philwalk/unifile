@@ -1,13 +1,15 @@
 package vastblue.file
 
 import vastblue.Platform.*
-import vastblue.PlatformExtra.*
+import vastblue.MountMapper.*
 import vastblue.file.Paths.*
+import vastblue.util.PathExtensions
+
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
-class RootRelativeTest extends AnyFunSpec with Matchers with BeforeAndAfter {
+class RootRelativeTest extends AnyFunSpec with Matchers with BeforeAndAfter with PathExtensions {
   private var hook = 0
   val verbose = Option(System.getenv("VERBOSE_TESTS")).nonEmpty
 
