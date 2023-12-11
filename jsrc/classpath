@@ -1,0 +1,69 @@
+#!/usr/bin/env -S scala @./atFile
+
+import vastblue.pallet.*
+
+lazy val (psep, cp) = {
+  val ps = sys.props("path.separator")
+  val clp = sys.props("java.class.path").split(ps)
+  (ps, clp)
+}
+lazy val homedir = sys.props("user.home").replace('\\', '/')
+lazy val scriptName = sys.props("script.path").norm.replaceAll(".*/", "")
+
+def usage(msg: String=""): Nothing = {
+  if ( msg.nonEmpty ) {
+    printf("%s\n", msg)
+  }
+  printf("%s [<options>]\n", scriptName)
+  val info = Seq(
+    "-d           ; list classpath directories",
+    "-j           ; list classpath jars",
+    "-v           ; verbose",
+  )
+  for (s <- info) {
+    printf("%s\n", s)
+  }
+  sys.exit(0)
+}
+
+// analyze classpath, selectively showing dirs, jars and bad entries
+// usage: ${0##*/} [-dirs] [-jars]"
+def main(args: Array[String]): Unit =
+  var verbose = false
+  var (dirs, jars) = (true, false)
+  args.indices.foreach { i =>
+    args(i) match {
+    case "-v" => verbose = true
+    case "-d" | "-dirs" => dirs = !dirs
+    case "-j" | "-jars" => jars = !jars
+    case arg =>
+      usage(s"unrecognized arg [$arg]")
+    }
+  }
+  if (!dirs && !jars && !verbose) {
+    usage()
+  }
+  if (verbose) {
+    printf("psep[%s]\n", psep)
+  }
+  for (e <- cp) {
+    val fname = if (e.startsWith("~")) {
+      e.replaceFirst("~", homedir)
+    } else {
+      e
+    }
+    if (verbose) {
+      printf("%s\n", fname.norm)
+    }
+    val p = java.nio.file.Paths.get(fname)
+    val isdir = p.toFile.isDirectory
+    val isfil = p.toFile.isFile
+    (isfil, isdir) match {
+    case (true, false) =>
+      if (jars) printf("jar: %s\n", p.norm)
+    case (false, true) =>
+      if (dirs) printf("dir: %s\n", p.norm)
+    case _ =>
+      printf("%5s: %5s: %s\n", isdir, isfil, p.norm)
+    }
+  }
