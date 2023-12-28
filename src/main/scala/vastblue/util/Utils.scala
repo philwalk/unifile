@@ -3,7 +3,7 @@ package vastblue.util
 import vastblue.Platform
 import vastblue.Platform.*
 import vastblue.file.ProcfsPaths.*
-import vastblue.util.PathExtensions
+import vastblue.util.PathExtensions.*
 
 import java.io.{File => JFile}
 import java.nio.file.{Files => JFiles, Paths => JPaths, Path => JPath}
@@ -11,7 +11,7 @@ import java.io.{BufferedReader, FileReader}
 import scala.util.Using
 import scala.jdk.CollectionConverters.*
 
-object Utils extends PathExtensions {
+object Utils  {
   def driveRelative(p: Path): Boolean = {
     p.toString.startsWith("/") && !p.isAbsolute
   }
@@ -170,4 +170,48 @@ object Utils extends PathExtensions {
     }
     ok
   }
+
+  def toRealPath(p: Path): Path = {
+    val pnorm: String = nativePathString(p)
+    val preal: String = _exec(realpathExe, pnorm)
+    Paths.get(preal)
+  }
+  private lazy val realpathExe = {
+    val rp = _where(s"realpath${exeSuffix}")
+    rp
+  }
+  private[vastblue] def _realpath(p: Path): Path = if (JFiles.isSymbolicLink(p)) {
+    try {
+      // p.toRealPath() // good symlinks
+      JFiles.readSymbolicLink(p);
+    } catch {
+      case fse: java.nio.file.FileSystemException =>
+        realpathLs(p) // bad symlinks, or file access permission
+    }
+  } else {
+    p // not a symlink
+  }
+
+//  def realpathLs(p: Path): Path = { // ask ls what symlink references
+//    val pnorm = nativePathString(p)
+//    _exec("ls", "-l", pnorm).split("\\s+->\\s+").toList match {
+//    case a :: b :: Nil =>
+//      Paths.get(b)
+//    case _ =>
+//      p
+//    }
+//  }
+
+  def SCALA_HOME = Option(System.getenv("SCALA_HOME")).getOrElse("")
+  def scalaHome  = Option(sys.props("scala.home")).getOrElse(SCALA_HOME)
+
+  def scala3Version = {
+    val versionFile = Paths.get(s"$scalaHome/VERSION")
+    if (versionFile.toFile.exists) {
+      scala.io.Source.fromFile(versionFile.toFile).getLines().take(1).mkString.replaceFirst("version:=","")
+    } else {
+      ""
+    }
+  }
+
 }

@@ -1,12 +1,15 @@
+//lazy val scala213 = "2.13.12"
 lazy val scala331 = "3.3.1"
 lazy val scalaVer = scala331
 
 lazy val supportedScalaVersions = List(scala331)
 // lazy val supportedScalaVersions = List(scalaVer)
 
+javacOptions ++= Seq("-source", "11", "-target", "11")
+
 //ThisBuild / envFileName   := "dev.env" // sbt-dotenv plugin gets build environment here
 ThisBuild / scalaVersion  := scalaVer
-ThisBuild / version       := "0.1.1"
+ThisBuild / version       := "0.2.2"
 ThisBuild / versionScheme := Some("semver-spec")
 
 ThisBuild / organization         := "org.vastblue"
@@ -54,10 +57,15 @@ resolvers += Resolver.mavenLocal
 
 publishTo := sonatypePublishToBundle.value
 
-lazy val root = (project in file(".")).settings(
-  crossScalaVersions := supportedScalaVersions,
-  name               := "unifile"
-)
+lazy val root = (project in file(".")).
+  enablePlugins(BuildInfoPlugin).
+  settings(
+    crossScalaVersions := supportedScalaVersions,
+    name               := "unifile",
+ // mainClass          := Some("vast.apps.ShowSysProps"),
+    buildInfoKeys      := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+    buildInfoPackage   := "unifile", // available as "import unifile.BuildInfo"
+  )
 
 libraryDependencies ++= Seq(
 //"org.simpleflatmapper"   % "sfm-csv-jre6"    % "8.2.3",

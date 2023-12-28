@@ -1,27 +1,29 @@
 package vastblue.file
 
-import vastblue.Platform.* // mountMap
+import vastblue.Platform.*
+import vastblue.unifile.posx
+//import vastblue.Script.posx
 
-import java.io.{File => JFile}
-import java.nio.file.{Path => JPath}
-import java.nio.file.{Files => JFiles, Paths => JPaths}
+import java.io.File as JFile
+import java.nio.file.Path as JPath
+import java.nio.file.{Files as JFiles, Paths as JPaths}
 import scala.collection.immutable.ListMap
-import scala.util.control.Breaks._
+import scala.util.control.Breaks.*
 import java.io.{BufferedReader, FileReader}
 import scala.util.Using
-import scala.sys.process._
-import scala.jdk.CollectionConverters._
+import scala.sys.process.*
+import scala.jdk.CollectionConverters.*
 
 object ProcfsPaths {
   private var hook = 0
   def hasProcfs: Boolean = _isLinux || _isWinshell
 
   def rootSeg(s: String): String = {
-    val posix = norm(s)
+    val posix = posx(s)
     if (!posix.startsWith("/")) "" else posix.drop(1).split("/").head
   }
   def pathSegs(s: String): List[String] = {
-    val posix = norm(s)
+    val posix = posx(s)
     if (posix.startsWith("/")) {
       posix.drop(1).split("/").toList
     } else {

@@ -5,9 +5,9 @@ import vastblue.file.Paths
 import vastblue.file.Paths.*
 import vastblue.Platform.*
 import org.junit.Test
-import vastblue.util.PathExtensions
+import vastblue.util.PathExtensions.*
 
-class TestUniPath extends PathExtensions {
+class TestUniPath {
   val verbose = Option(System.getenv("VERBOSE_TESTS")).nonEmpty
 
   def testArgs = Seq.empty[String]

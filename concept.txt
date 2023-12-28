@@ -1,0 +1,31 @@
+
+/*
+ * Support for writing portable/posix scala scripts.
+ *
+ * Supported environments:
+ * Unix / Linux / OSX, Windows shell environments (CYGWIN64, MINGW64,
+ * MSYS2, GIT-BASH, etc.).
+ *
+ * convenience fields:
+ * bashPath: Path      : path to bash executable
+ * posixroot: String   : root directory of the shell environment
+ * unamefull: String   : value reported by `uname -a`
+ *
+ * To identify the environment:
+ *   isCygwin: Boolean   : true if running cygwin64
+ *   isMsys64: Boolean   : true if running msys64
+ *   isMingw64: Boolean  : true if running mingw64
+ *   isGitSdk64: Boolean : true if running gitsdk
+ *   isMingw64: Boolean  : true if running mingw64
+ *   isWinshell
+ *   wsl: Boolean
+ *
+ * The preferred way to find an executable on the PATH (very fast):
+ *   val p: Path = findInPath(binaryName)
+ *
+ * A Fallback method (much slower):
+ *   val path: String = whichPath(binaryName)
+ *
+ * How to determine where msys2/ mingw64 / cygwin64 is installed?
+ *   posixroot
+ */

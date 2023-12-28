@@ -9,7 +9,7 @@ import vastblue.util.PathExtensions
 
 class PathnameTest extends AnyFunSpec with Matchers with BeforeAndAfter with PathExtensions {
   var hook = 0
-  val verbose = Option(System.getenv("VERBOSE_TESTS")).nonEmpty
+//  val verbose = Option(System.getenv("VERBOSE_TESTS")).nonEmpty
 
   def nativePathString(p: Path): String = {
     p.normalize.toString match {

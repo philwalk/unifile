@@ -1,17 +1,17 @@
 package vastblue.file
 
-import vastblue.Platform.*
-import vastblue.file.Paths.*
+import vastblue.unifile.*
+import vastblue.Platform
+import vastblue.Platform.{_pwd, pwdposx}
+import vastblue.util.Utils.isSameFile
 
-import vastblue.util.Utils.*
-import vastblue.util.PathExtensions
-
-import org.scalatest._
+import org.scalatest.*
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
-import java.io.{File => JFile}
 
-class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter with PathExtensions {
+import java.io.File as JFile
+
+class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
   val verbose   = Option(System.getenv("VERBOSE_TESTS")).nonEmpty
   var hook: Int = 0
 
@@ -32,11 +32,32 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter with PathExt
     printf("testFile: %s\n", testFile)
   }
   hook += 1
+  describe ("invariants") {
+    // verify test invariants
+    describe ("working drive") {
+      it (" should be correct for os") {
+        if (isWindows) {
+          assert(hereDrive.matches("[a-zA-Z]:"))
+        } else {
+          assert(hereDrive.isEmpty)
+        }
+      }
+    }
+    describe("pwd") {
+      it ("should be correct wrt rootDrive for os") {
+        if (isWindows) {
+          assert(here.take(2).matches("[a-zA-Z]:"))
+        } else {
+          assert(!here.take(2).mkString.contains(":"))
+        }
+      }
+    }
+  }
   describe("Paths.get") {
     it("should correctly apply `posixroot`") {
-      if (_isWinshell) {
+      if (isWinshell) {
         val etcFstab = Paths.get("/etc/fstab").posx
-        val posxroot: String = posixroot
+        val posxroot: String = Platform._shellRoot
         if (!etcFstab.startsWith(posxroot)) {
           hook += 1
         }
@@ -55,9 +76,12 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter with PathExt
       if (!ok) {
         hook += 1
       }
+      printf("p.posx: %s\n", pnorm)
+      printf("p.relpath: %s\n", pnorm)
+      printf("p.relpath.posx: %s\n", posx)
       assert(posx == pnorm || (posx.length >= pnorm.length) && pnorm.endsWith(posx))
     }
-    // TODO: should NOT relativize .. blah-blah-blah
+    // TODO: should NOT relativize when .. blah-blah-blah
   }
   hook += 1
   describe("File") {
@@ -102,7 +126,7 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter with PathExt
       }
     }
     hook += 1
-    if (_isWindows) {
+    if (isWindows) {
       printf("cdrive.exists:         %s\n", cdrive.exists)
       printf("cdrive.isDirectory:    %s\n", cdrive.isDirectory)
       printf("cdrive.isRegularFile:  %s\n", cdrive.isDirectory)
@@ -129,16 +153,21 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter with PathExt
           }
           val file = Paths.get(fname)
           printf("%-22s : %s\n", file.stdpath, file.exists)
-          val a = expected.toLowerCase
+          val a = expected.toLowerCase.replace('/', '\\')
           // val b = file.toString.toLowerCase
           // val c = file.localpath.toLowerCase
           val d        = file.dospath.toLowerCase
           val df       = normPath(d)
           val af       = normPath(a)
           val sameFile = isSameFile(af, df)
-          if (sameFile || a == d) {
+          def isPwd(s: String): Boolean = s == "." || s == pwdposx
+          val equivalent = a == d || a.path.abs == d.path.abs
+          if (sameFile && equivalent) {
             println(s"a [$a] == d [$d]")
-            assert(a == d)
+            if (a != d) {
+              hook += 1
+            }
+            assert(equivalent)
           } else {
             System.err.printf("expected[%s]\n", expected.toLowerCase)
             System.err.printf("file.localpath[%s]\n", file.localpath.toLowerCase)
@@ -259,8 +288,8 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter with PathExt
     for (fname <- procFiles) {
       describe(s"# $fname") {
         it(s"should be readable in Linux or Windows shell") {
-          if (_isLinux || _isWinshell) {
-            val text = fname.path.contentAsString().trim.takeWhile(_ != '\n')
+          if (isLinux || isWinshell) {
+            val text = fname.path.contentAsString.trim.takeWhile(_ != '\n')
             System.out.printf("# %s :: [%s]\n", fname, text)
             assert(text.nonEmpty)
           }
@@ -307,14 +336,21 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter with PathExt
     p
   }
 
-  lazy val here  = _pwd.normalize.toString.toLowerCase
-  lazy val uhere = here.replaceAll("[a-zA-Z]:", "").replace('\\', '/')
+  lazy val here  = _pwd.toAbsolutePath.normalize.toString.toLowerCase.replace('\\', '/')
+  lazy val uhere = here.replaceFirst("^[a-zA-Z]:", "")
 
-  lazy val hereDrive = here.replaceAll(":.*", ":") match {
-  case drive if drive >= "a" && drive <= "z" =>
-    drive
-  case _ =>
-    ""
+  lazy val hereDrive = {
+    val hd = here.replaceAll(":.*$", "")
+    hd match {
+    case drive if drive >= "a" && drive <= "z" =>
+      s"$drive:"
+    case _ =>
+      if (isWindows) {
+        System.err.println(s"internal error: _pwd[$_pwd], here[$here], uhere[$uhere]")
+        sys.error("hereDrive error")
+      }
+      ""
+    }
   }
 
   lazy val dosHomeDir: String   = sys.props("user.home")
@@ -365,7 +401,7 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter with PathExt
   lazy val TMP: String = {
     val driveLetter = "g"
     val driveRoot   = s"${cygroot}${driveLetter}"
-    if (canExist(driveRoot.path)) {
+    if (vastblue.Platform.canExist(driveRoot.path)) {
       val tmpdir = Paths.get(driveRoot)
       // val str = tmpdir.localpath
       tmpdir.isDirectory && tmpdir.paths.contains("/tmp") match {

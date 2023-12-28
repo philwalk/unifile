@@ -1,28 +1,51 @@
 package vastblue
 
-import vastblue.Platform.*
+//import vastblue.Platform
+//import vastblue.Platform.*
+import vastblue.Platform.{_propOrElse, _propOrEmpty}
 import vastblue.file.Paths
+
 import java.nio.file.Path
-import vastblue.util.PathExtensions
+import vastblue.util.PathExtensions.*
 
-object Script extends PathExtensions {
+object Script {
+  private lazy val verby: String = Option(System.getenv("SCRIPT_VERBY")).getOrElse("")
+  private def verbyFlag = verby.nonEmpty
 
-  def scriptProp(e: Exception = new Exception()): String = {
-    def stackHead: String   = e.getStackTrace.head.getFileName
-    val scrPathProp: String = _propOrElse("script.path", stackHead).jpath.relativePath
-    if (verbose) {
-      System.err.printf("scrPathProp[%s]\n", scrPathProp)
-    }
+  def searchStackTrace(e: Exception = new Exception()): String = {
+    def stackList: Seq[String] = e.getStackTrace.toIndexedSeq.map { _.getFileName }
+    def relevant: String   = stackList.dropWhile( (s: String) =>
+      s.contains("vastblue") ||
+      s.contains("MainArgs.scala") ||
+      s.contains("Script.scala") ||
+      s.contains("ArgsUtil.scala")
+    ).take(1).mkString
+
+    relevant
+  }
+
+  /*
+  def getScriptProp(e: Exception = new Exception()): String = {
+    def stackList: Seq[String] = e.getStackTrace.toIndexedSequence.map { _.getFileName }
+    def stackHead: String   = stackList.dropWhile(_.contains("vastblue")).head
+    val scrPathProp: String = _propOrElse("script.path", stackHead).path.relativePath.posx
     scrPathProp
   }
+  */
 
+  def scriptNameSources = Seq(
+    _propOrEmpty("script.path"),
+    Script.searchStackTrace(new Exception()),
+  )
   def _scriptPath: String = _propOrElse("script.path", scriptProp)
   def scriptName: String  = _scriptPath match {
-  case ""   => scriptProp
-  case name => name
+  case "" | "MainArgs.scala" | "mainargs.scala" | "Script.scala" =>
+    scriptProp.replaceAll(".*/", "")
+  case name =>
+    name
   }
 
-  private lazy val scriptProp: String = Script.scriptProp(new Exception())
+  lazy val scriptProp: String = Script.searchStackTrace(new Exception())
 
   // TODO: this works if running from a script, but need to gracefully do something
   // otherwise.  If executing from a jar file, read manifest to get main class
@@ -52,13 +75,13 @@ object Script extends PathExtensions {
 
   private lazy val scriptFileDataTag = "/* _DATA_"
 
-  def eprintln(text: String): Unit = {
+  def _eprintln(text: String): Unit = {
     System.err.print(text)
   }
-  def ePrintf(fmt: String, xs: Any*): Unit = {
+  def _eprintf(fmt: String, xs: Any*): Unit = {
     System.err.print(fmt.format(xs: _*))
   }
-  def eprint(xs: Any*): Unit = {
+  def _eprint(xs: Any*): Unit = {
     System.err.print("%s".format(xs: _*))
   }
 
@@ -72,7 +95,7 @@ object Script extends PathExtensions {
       // val charset = java.nio.charset.Charset.forName(encoding)
       var data = scalaScriptFile.lines.dropWhile(!_.startsWith(scriptFileDataTag)).toList
       if (data.isEmpty) {
-        ePrintf("# no data section found (expecting start delimiter line: [%s]\n", scriptFileDataTag)
+        _eprintf("# no data section found (expecting start delimiter line: [%s]\n", scriptFileDataTag)
         List[String]() // no data section found
       } else {
         if (data.head.startsWith(scriptFileDataTag)) {
@@ -113,9 +136,6 @@ object Script extends PathExtensions {
   }
   lazy val thisClassName: String = getClassName(this)
 
-  def eprintf(fmt: String, xs: Any*): Unit = {
-    System.err.print(fmt.format(xs: _*))
-  }
 
   lazy val verbose = Option(System.getenv("VERBY")).nonEmpty
 }

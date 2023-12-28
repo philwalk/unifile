@@ -1,9 +1,12 @@
 package vastblue.file
 
+import vastblue.MountMapper.cygdrive
 import vastblue.Platform
-import vastblue.Platform.*
+import vastblue.Platform.{envPath, exeSuffix, shellDrive}
+import vastblue.file.Util.notWindows
+//import vastblue.Platform.*
 import vastblue.file.ProcfsPaths.*
-import vastblue.util.PathExtensions
+import vastblue.util.PathExtensions.*
 
 import java.io.{File => JFile}
 import java.nio.file.{Files => JFiles, Paths => JPaths, Path => JPath}
@@ -20,7 +23,7 @@ import scala.jdk.CollectionConverters.*
  *   + forwards request to `java.nio.file.Paths.get()`  
  *   + forwards request to `java.nio.file.Paths.get()`  
  */
-object Paths extends PathExtensions {
+object Paths {
   private var hook = 0
   type Path = java.nio.file.Path
 
@@ -70,22 +73,25 @@ object Paths extends PathExtensions {
    * NOTE: support for "/proc/meminfo" and other procfs files by spawning `cat`.
    * See `vastblue.file.ProcfsPath` for details.
    */
+  //                         JPaths to avoid recursive black hole
+  lazy val pwdposx: String = JPaths.get(".").toAbsolutePath.posx
+
   def get(_fnamestr: String): Path = {
     val _pathstr = derefTilde(_fnamestr) // replace leading tilde with sys.props("user.home")
 
     val psxStr = _pathstr.replace('\\', '/')
 
     val p: Path = {
-      if (psxStr.startsWith(pwdnorm)) {
-        val rel = psxStr.replace(pwdnorm, ".") // convert to "./" format
+      if (psxStr.startsWith(s"$pwdposx/")) {
+        val rel = psxStr.replace(pwdposx, ".") // convert to "./" format
         JPaths.get(rel)
       } else if (psxStr.isEmpty || psxStr.startsWith(".")) {
         JPaths.get(psxStr) // includes ".", "..", "" 
-      } else if (_notWindows || hasDriveLetter(psxStr) || psxStr.matches("/proc(/.*)?")) {
+      } else if (notWindows || hasDriveLetter(psxStr) || psxStr.matches("/proc(/.*)?")) {
         JPaths.get(psxStr)
       } else {
         // most of the complexity is here:
-        Platform.pathsGetWindows(_fnamestr)
+        vastblue.Platform.pathsGetWindows(_fnamestr)
       }
     }
     p
@@ -95,7 +101,7 @@ object Paths extends PathExtensions {
     JFile.listRoots.toList.map { (f: JFile) => f.toString }
   }
 
-  // this may be needed to replace `def canExist` in vastblue.os
+  // this may be needed to replace `canExist` in vastblue.os
   lazy val driveLettersLc: List[String] = {
 //    val values = mountMap.values.toList
     val letters = {
@@ -140,15 +146,15 @@ object Paths extends PathExtensions {
     case LetterPath(letter, path) =>
       (s"$letter:", path)
     case _ =>
-      ("", _shellRoot)
+      ("", shellRoot)
     }
   }
 
-  def segments(p: Path): Seq[Path] = p.iterator().asScala.toSeq
+//  def segments(p: Path): Seq[Path] = p.iterator().asScala.toSeq
 
   def isDirectory(path: String): Boolean = {
     lazy val pfs = Procfs(path)
-    if (_isWinshell && pfs.segs == "proc" :: Nil) {
+    if (isWinshell && pfs.segs == "proc" :: Nil) {
       pfs.isDir
     } else {
       Paths.get(path).toFile.isDirectory
@@ -179,16 +185,16 @@ object Paths extends PathExtensions {
     findPath(cname)
   }
 
-  def canExist(p: Path): Boolean = {
-    // val letters = driveLettersLc.toArray
-    val pathdrive = pathDriveletter(p)
-    pathdrive match {
-    case "" =>
-      true
-    case letter =>
-      driveLettersLc.contains(letter)
-    }
-  }
+//  def canExist(p: Path): Boolean = {
+//    // val letters = driveLettersLc.toArray
+//    val pathdrive = pathDriveletter(p)
+//    pathdrive match {
+//    case "" =>
+//      true
+//    case letter =>
+//      driveLettersLc.contains(letter)
+//    }
+//  }
 
 
   def dirExists(pathstr: String): Boolean = {
@@ -216,22 +222,14 @@ object Paths extends PathExtensions {
       p.toFile.exists
   }
   def exists(path: String): Boolean = {
-    exists(Paths.get(path))
+    Paths.get(path).exists
   }
-//  def exists(p: Path): Boolean = {
-//    canExist(p) && {
-//      p.toFile match {
-//      case f if f.isDirectory => true
-//      case f => f.exists
-//      }
-//    }
-//  }
 
   // drop drive letter and normalize backslash
   def dropshellDrive(str: String)  = str.replaceFirst(s"^${shellDrive}:", "")
   def dropDriveLetter(str: String) = str.replaceFirst("^[a-zA-Z]:", "")
   def asPosixPath(str: String)     = dropDriveLetter(str).replace('\\', '/')
-  def asLocalPath(str: String) = if (_notWindows) str
+  def asLocalPath(str: String) = if (notWindows) str
   else
     str match {
     case PosixCygdrive(dl, tail) => s"$dl:/$tail"
@@ -239,22 +237,10 @@ object Paths extends PathExtensions {
     }
   lazy val PosixCygdrive = "[\\/]([a-z])([\\/].*)?".r
 
-//  def stdpath(path: Path): String = path.toString.replace('\\', '/')
-//  def stdpath(str: String)        = str.replace('\\', '/')
-//  def norm(p: Path): String       = p.toString.replace('\\', '/')
-//  def norm(str: String) = str.replace('\\', '/')
-
-  def eprint(xs: Any*): Unit = {
-    System.err.print("%s".format(xs: _*))
-  }
-  def eprintf(fmt: String, xs: Any*): Unit = {
-    System.err.print(fmt.format(xs: _*))
-  }
-
   def fileLines(f: JFile): Seq[String] = {
     val fnorm = f.toString.replace('\\', '/')
-    if (_isWindows && fnorm.matches("/(proc|sys)(/.*)?")) {
-      _execLines("cat.exe", fnorm)
+    if (isWindows && fnorm.matches("/(proc|sys)(/.*)?")) {
+      execLines("cat.exe", fnorm)
     } else {
       Using
         .resource(new BufferedReader(new FileReader(f))) { reader =>

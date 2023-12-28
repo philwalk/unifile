@@ -1,101 +1,69 @@
 package vastblue
 
-import java.io.{File => JFile}
+import java.io.File as JFile
 import java.nio.file.{FileSystemException, Path}
-import java.nio.file.{Files => JFiles, Paths => JPaths}
-import java.io.{PrintWriter, OutputStreamWriter, FileWriter}
-import scala.util.control.Breaks.*
-import scala.sys.process.*
-import scala.collection.mutable.{Map => MutMap}
-import scala.jdk.CollectionConverters._
+import java.nio.file.{Files as JFiles, Paths as JPaths}
+import java.io.{BufferedReader, FileReader}
+import java.io.{FileWriter, OutputStreamWriter, PrintWriter}
 import java.nio.charset.Charset
 import java.nio.charset.Charset.*
+
+import scala.collection.immutable.ListMap
+import scala.util.control.Breaks.*
+import scala.util.Using
+import scala.sys.process.*
+import scala.collection.mutable.Map as MutMap
+import scala.jdk.CollectionConverters.*
+
 import vastblue.DriveRoot.*
+import vastblue.MountMapper.{mountMap, reverseMountMap}
 import vastblue.file.Paths
-import vastblue.util.PathExtensions
+import vastblue.util.PathExtensions.*
 
 /*
  * Supported environments:
  * Unix / Linux / OSX, Windows shell environments (CYGWIN64, MINGW64,
  * MSYS2, GIT-BASH, etc.).
  */
-object Platform extends PathExtensions {
+object Platform {
   private var hook = 0
-  
-  // cygdrive is mutable
-  private var _cygdrive: String = "/" // default in cygwin: "/cygdrive", msys: "/"
-  def cygdrive: String = _cygdrive
-  def cygdrive_=(s: String): Unit = _cygdrive = s
-
-  def DefaultCharset = defaultCharset
   type Path = java.nio.file.Path
 
-  /*
-  extension(s: String) {
-    def posx: String = s.replace('\\', '/')
-    def jpath: Path = JPaths.get(s)
-    def path: Path = Paths.get(s)
-    def toPath: Path = Paths.get(s)
-    def toFile: JFile = Paths.get(s).toFile
-  }
-  extension(p: Path) {
-    def posx: String = p.toString.posx
-    def abs: String = p.toAbsolutePath.posx
-    def stdpath: String = _stdpath(p)
-    def dospath: String = posx.replace('/', '\\')
-    def localpath: String = posx.replace('/', JFile.separatorChar)
-    def isDirectory: Boolean = p.toFile.isDirectory
-    def isFile: Boolean = p.toFile.isFile
-    def exists: Boolean = p.toFile.exists
-    def getParent: String = p.toFile.getParent
-    def parentFile: JFile = p.toFile.getParentFile
-    def relpath: Path = relativize(p)
-    def relativePath: String = relpath.toString.posx
-    def lines = readLines(p)
-    def files: Seq[JFile] = p.toFile.listFiles.toSeq
-    def paths: Seq[Path] = p.toFile.listFiles.map { _.toPath }.toSeq
-    def noDrive: String = p.posx match {
-    case s if s.take(2).endsWith(":") => s.drop(2)
-    case s                            => s
-    }
-    def delete() = p.toFile.delete()
-    def isSymbolicLink: Boolean = JFiles.isSymbolicLink(p)
-    def realPath: Path = this.toRealPath(p)
-    def byteArray: Array[Byte] = JFiles.readAllBytes(p)
-    def contentAsString(charset: Charset = DefaultCharset): String = {
-      val posx = p.posx
-      if (posx.startsWith("/proc")) {
-        _exec("cat", posx)
-      } else {
-        new String(byteArray, charset)
-      }
-    }
-  }
+  private val foundPaths: MutMap[String, Path]  = MutMap.empty[String, Path]
+  private val foundExes: MutMap[String, String] = MutMap.empty[String, String]
+
+  def DefaultCharset = defaultCharset
   
-  extension(f: JFile) {
-    def posx: String = f.getAbsolutePath.posx
-    def abs: String = f.toPath.toAbsolutePath.posx
-    def isDirectory: Boolean = f.isDirectory
-    def isFile: Boolean = f.isFile
-    def exists: Boolean = f.exists
-    def getParent: String = f.getParent
-    def parentFile: JFile = f.getParentFile
-    def byteArray: Array[Byte] = JFiles.readAllBytes(f.toPath)
-    def files: Seq[JFile] = f.listFiles.toSeq
-    def paths: Seq[Path] = f.listFiles.toSeq.map { _.toPath }
-  }
-  */
+  // cygdrive is mutable, to support unit testing
+  // typical cygdrive values, if /etc/fstab is not customized
+  //    cygwin: "/cygdrive",
+  //    msys:   "/"
+//  private var _cygdrive: String = if (_isWindows) "/" else ""
+  def cygdrive: String = MountMapper.cygdrive
+//  def cygdrive_=(s: String): Unit = _cygdrive = s
 
   def _stdpath(p: Path): String = {
-    _stdpath(p.abs)
+    standardizePath(p.toAbsolutePath.normalize.toString.replace('\\', '/'))
+  }
+
+  def stdpath(p: Path): String = {
+    // drop drive letter, if present and if equal to working drive
+    val posix = if (isWindows) {
+      val nm = nativePathString(p)
+      vastblue.file.Util.withPosixDriveLetter(nm) // e.g., /c
+    } else {
+      p.toAbsolutePath.toString.posx
+    }
+    posix
   }
 
   // lots of subtlety here
-  def _stdpath(pstr: String) = {
-    if (pstr == "C:/data") {
-      hook += 1
+  // drop drive letter, if present and if equal to working drive
+  def standardizePath(pstr: String): String = {
+    val take2: String = pstr.take(2) match {
+      case s if !s.contains(":") => ""
+      case s => s
     }
-    val take2: String = pstr.take(2)
     val (dlPrefix: String, stdtail: String) = take2 match {
     case s if s.endsWith(":") =>
       (s, pstr.drop(2))
@@ -154,11 +122,13 @@ object Platform extends PathExtensions {
     cygified
   }
   def _userHome = sys.props("user.home")
-  def _pwd = JPaths.get(".").toAbsolutePath
   def BadPath(psxStr: String) = JPaths.get(s"BadPath-$psxStr")
   def isAlpha(c: Char): Boolean = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
   def scriptName: String = Script.scriptName
   def scriptPath: Path   = Script.scriptPath
+
+  def _pwd: Path = JPaths.get(".").toAbsolutePath.normalize
+  lazy val cwd: Path = _pwd
 
   // returns a String
   def _exec(args: String*): String = {
@@ -175,7 +145,8 @@ object Platform extends PathExtensions {
   def _isWindows: Boolean  = !_notWindows
 
   def readLines(p: Path): Seq[String] = {
-    JFiles.readAllLines(p).asScala.toSeq
+    vastblue.file.Util.readLines(p)
+    // JFiles.readAllLines(p).asScala.toSeq
   }
 
   def exeSuffix: String = if (_isWindows) ".exe" else ""
@@ -236,16 +207,6 @@ object Platform extends PathExtensions {
 
     out.map { _.replace('\\', '/') }.filter { s =>
       !exeFilterList.contains(s)
-    }
-  }
-
-  lazy val WINDIR = Option(System.getenv("SYSTEMROOT")).getOrElse("").replace('\\', '/')
-  lazy val whereExe = {
-    WINDIR match {
-    case "" =>
-      _whereFunc("where")
-    case path =>
-      s"$path/System32/where.exe"
     }
   }
 
@@ -345,9 +306,6 @@ object Platform extends PathExtensions {
     }
   }
 
-  lazy val _unameLong: String  = _uname("-a")
-  lazy val _unameShort: String = _unameLong.toLowerCase.replaceAll("[^a-z0-9].*", "")
-
   def _osName: String = sys.props("os.name")
 
   lazy val _osType: String = _osName.toLowerCase match {
@@ -358,9 +316,6 @@ object Platform extends PathExtensions {
     sys.error(s"osType is [$other]")
   }
 
-  def _isWinshell: Boolean = _isMsys | _isCygwin | _isMingw | _isGitSdk | _isGitbash
-  def _isDarwin: Boolean   = _osType == "darwin"
-
   def unameTest(s: String): Boolean = _unameShort.toLowerCase.startsWith(s)
 
   lazy val _isLinux: Boolean   = unameTest("linux")
@@ -370,8 +325,14 @@ object Platform extends PathExtensions {
   lazy val _isGitSdk: Boolean  = unameTest("git-sdk")
   lazy val _isGitbash: Boolean = unameTest("gitbash")
 
+  def _isWinshell: Boolean = _isMsys | _isCygwin | _isMingw | _isGitSdk | _isGitbash
+  def _isDarwin: Boolean   = _osType == "darwin"
+
   def _javaHome: String  = _propElseEnv("java.home", "JAVA_HOME")
-  def _scalaHome: String = _propElseEnv("scala.home", "SCALA_HOME")
+  def _scalaHome: String = _propElseEnv("scala.home", "SCALA_HOME") match {
+    case "" => "C:/opt/scala" // should only happen in the IDE, if environment is configured correctly
+    case s => s
+  }
   def _username: String  = _propOrElse("user.name", "unknown")
   def _userhome: String  = _propOrElse("user.home", _envOrElse("HOST", "unknown")).replace('\\', '/')
   def _hostname: String  = _envOrElse("HOSTNAME", _envOrElse("COMPUTERNAME", _exec("hostname"))).trim
@@ -380,30 +341,27 @@ object Platform extends PathExtensions {
   def _oprintf(fmt: String, xs: Any*): Unit = System.out.printf(fmt, xs) // suppresswarnings:discarded-value
   def _eprintf(fmt: String, xs: Any*): Unit = System.err.print(fmt.format(xs: _*))
 
-  def _propOrElse(name: String, alt: String): String = System.getProperty(name, alt)
+  def _propOrElse(name: String, alt: => String): String = System.getProperty(name, alt)
 
   def _propOrEmpty(name: String): String = _propOrElse(name, "")
 
-  def _envOrElse(name: String, alt: String): String = Option(System.getenv(name)).getOrElse(alt)
+  def _envOrElse(name: String, alt: => String): String = Option(System.getenv(name)).getOrElse(alt)
 
   def _envOrEmpty(name: String) = _envOrElse(name, "")
 
   def _propElseEnv(propName: String, envName: String, alt: String = ""): String = {
-    Option(sys.props("java.home")) match {
-    case None       => altJavaHome
-    case Some(path) => path
-    }
+    Option(sys.props(propName)).getOrElse(_envOrElse(envName, alt))
   }
 
   // executable Paths
   def _bashPath: Path  = _pathCache("bash")
-  def _catPath: Path   = _pathCache("cat")
-  def _findPath: Path  = _pathCache("find")
-  def _whichPath: Path = _pathCache("which")
-  def _unamePath: Path = _pathCache("uname")
-  def _lsPath: Path    = _pathCache("ls")
-  def _trPath: Path    = _pathCache("tr")
-  def _psPath: Path    = _pathCache("ps")
+//  def _catPath: Path   = _pathCache("cat")
+//  def _findPath: Path  = _pathCache("find")
+//  def _whichPath: Path = _pathCache("which")
+//  def _unamePath: Path = _pathCache("uname")
+//  def _lsPath: Path    = _pathCache("ls")
+//  def _trPath: Path    = _pathCache("tr")
+//  def _psPath: Path    = _pathCache("ps")
 
   // executable Path Strings, suitable for calling exec("bash", ...)
   def _bashExe: String  = _exeCache("bash")
@@ -414,9 +372,6 @@ object Platform extends PathExtensions {
   def _lsExe: String    = _exeCache("ls")
   def _trExe: String    = _exeCache("tr")
   def _psExe: String    = _exeCache("ps")
-
-  private val foundPaths: MutMap[String, Path]  = MutMap.empty[String, Path]
-  private val foundExes: MutMap[String, String] = MutMap.empty[String, String]
 
   def isDirectory(path: String): Boolean = {
     JPaths.get(path).toFile.isDirectory
@@ -459,7 +414,7 @@ object Platform extends PathExtensions {
       }
 
       val pathstr: String = candidates.toList match {
-      case exe :: tail => exe.posx
+      case exe :: tail => exe.toFile.posx
       case Nil         => _where(name)
       }
 
@@ -471,16 +426,21 @@ object Platform extends PathExtensions {
         // no permission to follow link
       }
       foundPaths(name) = pexe
-      foundExes(name) = pexe.posx
+      foundExes(name) = posx(pexe)
       pexe
     }
     exePath
   }
 
-  def _exeCache(name: String): String = {
-    foundExes.get(name) match {
-    case Some(pathString) => pathString
-    case None             => _pathCache(name).posx
+  def _exeCache(_name: String): String = {
+    val name = _name.posx.replaceAll("[.]exe$", "").replaceAll(".*/", "")
+    val pathString: Option[String] = foundExes.get(name)
+    pathString match {
+    case Some(pathString) =>
+      pathString
+    case None =>
+      val p: Path = _pathCache(name)
+      posx(p)
     }
   }
 
@@ -491,7 +451,7 @@ object Platform extends PathExtensions {
       Nil
     case Seq(progname) =>
       val exe = _exeCache(progname)
-      exe :: args.toList
+      exe :: args.drop(1).toList
     }
   }
 
@@ -513,6 +473,13 @@ object Platform extends PathExtensions {
   def _shellExec(str: String): LazyList[String] = {
     val cmd = Seq(_exeCache("bash"), "-c", str)
     Process(cmd).lazyLines_!
+  }
+
+  def _shellExec(str: String, env: Map[String, String]): LazyList[String] = {
+    val cmd      = Seq(_exeCache("bash"), "-c", str)
+    val envPairs = env.map { case (a, b) => (a, b) }.toList
+    val proc     = Process(cmd, hereJfile, envPairs: _*)
+    proc.lazyLines_!
   }
 
   // similar to _shellExec, but more control
@@ -538,14 +505,7 @@ object Platform extends PathExtensions {
     }
   }
 
-  lazy val here: java.io.File = JPaths.get(".").toFile
-
-  def _shellExec(str: String, env: Map[String, String]): LazyList[String] = {
-    val cmd      = Seq(_exeCache("bash"), "-c", str)
-    val envPairs = env.map { case (a, b) => (a, b) }.toList
-    val proc     = Process(cmd, here, envPairs: _*)
-    proc.lazyLines_!
-  }
+  lazy val hereJfile: java.io.File = JPaths.get(".").toFile
 
   def procCmdlineReader(pidfile: String) = {
     import scala.sys.process._
@@ -590,7 +550,8 @@ object Platform extends PathExtensions {
   lazy val _shellRoot: String = {
     if (_notWindows) "/"
     else {
-      val guess     = _bashPath.posx.replaceFirst("/[^/]*exe$", "")
+      val bashPath: String = posx(_bashPath)
+      val guess     = bashPath.replaceFirst("(/usr)?/bin/[^/]*exe$", "")
       val guessPath = JPaths.get(guess) // call JPaths.get here to avoid circular reference
       if (JFiles.isDirectory(guessPath)) {
         guess
@@ -647,6 +608,9 @@ object Platform extends PathExtensions {
     }
   }
 
+  lazy val posixrootBare = {
+    posixroot.reverse.dropWhile(_ == '/').reverse
+  }
   lazy val posixroot: String = {
     if (_notWindows) {
       "/"
@@ -659,31 +623,49 @@ object Platform extends PathExtensions {
       }
     }
   }
-
-  lazy val posixrootBare = {
-    posixroot.reverse.dropWhile(_ == '/').reverse
-  }
-
-  def norm(str: String) = {
-    try {
-      JPaths.get(str).normalize.toString match {
-      case "." => "."
-      case p   => p.replace('\\', '/')
-      }
-    } catch {
-      case e: Exception =>
-        str.replace('\\', '/')
+  lazy val binDir: String = {
+    val binDirString = s"${posixroot}/bin"
+    val binDirPath   = JPaths.get(binDirString)
+    binDirPath.toFile.isDirectory match {
+    case true =>
+      binDirString
+    case false =>
+      sys.error(s"unable to find binDir at [${binDirString}]")
     }
   }
 
-  def pwdnorm: String = _pwd.posx
+//  def posx(p: Path): String = {
+//    try {
+//      p.normalize.toString match {
+//      case "." => "."
+//      case p   => p.replace('\\', '/')
+//      }
+//    } catch {
+//      case e: Exception =>
+//        p.toString.replace('\\', '/')
+//    }
+//  }
+
+//  def posx(str: String): String = {
+//    try {
+//      JPaths.get(str).normalize.toString match {
+//      case "." => "."
+//      case p   => p.replace('\\', '/')
+//      }
+//    } catch {
+//      case e: Exception =>
+//        str.replace('\\', '/')
+//    }
+//  }
+
+  def pwdposx: String = posx(_pwd) // TODO: rename to pwdposx
 
   def relativize(p: Path): Path = {
     val pnorm = nativePathString(p)
-    if (pnorm == pwdnorm) {
+    if (pnorm == pwdposx) {
       _pwd
-    } else if (pnorm.startsWith(pwdnorm)) {
-      _pwd.relativize(p)
+    } else if (pnorm.startsWith(pwdposx)) {
+      _pwd.relativize(p).normalize
     } else {
       p
     }
@@ -749,17 +731,27 @@ object Platform extends PathExtensions {
   case class PathPsx(s: String, p: Path) extends PathType(s, p)
   case class PathBad(s: String, p: Path) extends PathType(s, p)
 
+  lazy val platVerby = _envOrEmpty("PLAT_VERBY").nonEmpty
+
   def windowsPathType(str: String): PathType = {
     require(_isWindows)
-    val psxStr = str.posx match {
+    val psxStr = posx(str) match {
     case s if s.startsWith("~") =>
       s"$_userHome${s.drop(1)}"
     case s =>
       s
     }
-    psxStr.take(3).toSeq match {
+    val first3 = psxStr.take(3)
+    if (platVerby) {
+      eprintf("windowsPathType: str[%s]\n", str)
+      eprintf("windowsPathType: psx[%s]\n", psxStr)
+      eprintf("windowsPathType: first3[%s]\n", first3)
+    }
+
+    first3.toSeq match {
     case Seq('/') =>
       PathPsx(psxStr, JPaths.get(_shellRoot))
+
     case Seq(a, ':', _) =>
       if (isAlpha(a)) {
         // val drive = s"a:"
@@ -789,6 +781,9 @@ object Platform extends PathExtensions {
       PathPsx(psxStr, cpath)
 
     case Seq(a, _, _) if isAlpha(a) =>
+      PathRel(psxStr, JPaths.get(psxStr))
+
+    case Seq(a, b) if isAlpha(a) && isAlpha(b) =>
       PathRel(psxStr, JPaths.get(psxStr))
     }
   }
@@ -820,4 +815,433 @@ object Platform extends PathExtensions {
     }
   }
 
+  lazy val WINDIR = Option(System.getenv("SYSTEMROOT")).getOrElse("").replace('\\', '/')
+  lazy val whereExe = {
+    WINDIR match {
+    case "" =>
+      _whereFunc("where")
+    case path =>
+      s"$path/System32/where.exe"
+    }
+  }
+
+  // TODO: for WSL, provide `wslpath`
+  // by default, returns -m path
+  def _cygpath(exename: String, args: String*): String = {
+    if (cygpathExe.nonEmpty) {
+      val cmd   = cygpathExe :: (args.toList ::: List(exename))
+      val lines = Process(cmd).lazyLines_!
+      lines.toList.mkString("").trim
+    } else {
+      exename
+    }
+  }
+
+  def cygpathM(path: Path): Path = {
+    val cygstr = cygpathM(path.normalize.toString)
+    JPaths.get(cygstr)
+  }
+
+  def cygpathM(pathstr: String): String = {
+    val normed = pathstr.replace('\\', '/')
+    val tupes: Option[(String, String)] = reverseMountMap.find { case (k, v) =>
+      val normtail = normed.drop(k.length)
+      // detect whether a fstab prefix is an exactly match of a normed path string.
+      normed.startsWith(k) && (normtail.isEmpty || normtail.startsWith("/"))
+    }
+    val cygMstr: String = tupes match {
+    case Some((k, v)) =>
+      val normtail = normed.drop(k.length)
+      s"$v$normtail"
+    case None =>
+      // apply the convention that single letter paths below / are cygdrive references
+      if (normed.take(3).matches("/./?")) {
+        val dl: String = normed.drop(1).take(1) + ":"
+        normed.drop(2) match {
+        case "" =>
+          s"$dl/" // trailing slash is required here
+        case str =>
+          s"$dl$str"
+        }
+      } else {
+        normed
+      }
+    }
+    // replace multiple slashes with single slash
+    cygMstr.replaceAll("//+", "/")
+  }
+
+  /*
+  lazy val mountMap = {
+    fstabEntries.map { (e: FsEntry) => (e.posix -> e.dir) }.toMap
+  }
+  */
+
+  /*
+  lazy val (
+    posix2localMountMap: Map[String, String],
+    reverseMountMap: Map[String, String]
+  ) = {
+    def emptyMap = Map.empty[String, String]
+    if (_notWindows || _shellRoot.isEmpty) {
+      (emptyMap, emptyMap)
+    } else {
+      val mmap = mountMap.toList.map { case (k: String, v: String) => (k.toLowerCase -> v) }.toMap
+      val rmap = mountMap.toList.map { case (k: String, v: String) => (v.toLowerCase -> k) }.toMap
+
+      // _cygdrive is mutable, to support unit testing
+      _cygdrive = rmap.get("cygdrive").getOrElse("") match {
+      case "/" =>
+        "/"
+      case "" =>
+        "" // must not be Windows
+      case s =>
+        s"$s/" // need trailing slash
+      }
+      // to speed up map access, convert keys to lowercase
+      (mmap, rmap)
+      // readWinshellMounts
+    }
+  }
+  */
+
+  case class FsEntry(dir: String, posix: String, ftype: String) {
+    override def toString = "%-22s, %-18s, %s".format(dir, posix, ftype)
+  }
+
+  lazy val fstabEntries: Seq[FsEntry] = {
+    val rr: String = posixroot
+    val etcFstab   = s"$rr/etc/fstab".replaceAll("[\\/]+", "/")
+    val p          = JPaths.get(etcFstab)
+    val entries = if (!p.isFile) {
+      Nil
+    } else {
+      val lines = readLines(p)
+        .map {
+          _.trim.replaceAll("\\s*#.*", "")
+        }
+        .filter {
+          !_.trim.isEmpty
+        }
+      for {
+        trimmed <- lines
+        ff = trimmed.split("\\s+", -1)
+        if ff.size >= 3
+        Array(local, posix, ftype) = ff.take(3).map { _.trim }
+        dir                        = if (ftype == "cygdrive") "cygdrive" else local
+      } yield FsEntry(dir, posix, ftype)
+    }
+    entries
+  }
+
+  // private fields to be imported by unifile.*
+  lazy val _unameLong: String  = _uname("-a")
+  lazy val _unameShort: String = _unameLong.toLowerCase.replaceAll("[^a-z0-9].*", "")
+
+  def getPath(s: String): Path = Paths.get(s)
+
+  def getPath(dir: Path, s: String): Path = JPaths.get(s"$dir/$s") // JPaths
+
+  def getPath(dir: String, s: String = ""): Path = Paths.get(s"$dir/$s")
+
+  lazy val driveLetters: List[DriveRoot] = {
+    val values = mountMap.values.toList
+    val letters = {
+      for {
+        dl <- values.map { _.take(2) }
+        if dl.drop(1) == ":"
+      } yield DriveRoot(dl)
+    }.distinct
+    letters
+  }
+
+  def dumpPath(): Unit = {
+    envPath.foreach { println }
+  }
+
+  def checkPath(dirs: Seq[String], prog: String): String = {
+    dirs.map { dir => JPaths.get(s"$dir/$prog") }.find { (p: Path) =>
+      p.toFile.isFile
+    } match {
+    case None    => ""
+    case Some(p) => p.normalize.toString.replace('\\', '/')
+    }
+  }
+
+  def whichInPath(prog: String): String = {
+    checkPath(envPath, prog)
+  }
+  def which(cmdname: String) = {
+    val cname = if (!exeSuffix.isEmpty && !cmdname.endsWith(exeSuffix)) {
+      s"${cmdname}${exeSuffix}"
+    } else {
+      cmdname
+    }
+    whichInPath(cname)
+  }
+
+  def verbyshow(str: String): Unit = if (_verbose) _eprintf("verby[%s]\n", str)
+
+  def dirExists(pathstr: String): Boolean = {
+    dirExists(JPaths.get(pathstr))
+  }
+  def dirExists(path: Path): Boolean = {
+    canExist(path) && JFiles.isDirectory(path)
+  }
+
+  def pathDriveletter(ps: String): DriveRoot = {
+    ps.take(2) match {
+    case str if str.drop(1) == ":" =>
+      DriveRoot(str.take(2))
+    case _ =>
+      DriveRoot("")
+    }
+  }
+  def pathDriveletter(p: Path): DriveRoot = {
+    pathDriveletter(p.toAbsolutePath.toString)
+  }
+
+  def canExist(p: Path): Boolean = {
+    val pathdrive: DriveRoot = pathDriveletter(p)
+    pathdrive.string match {
+    case "" =>
+      true
+    case letter =>
+      driveLetters.contains(letter)
+    }
+  }
+
+  // fileExists() solves the Windows jvm problem that path.toFile.exists
+  // is VEEERRRY slow for files on a non-existent drive (e.g., q:/).
+  def fileExists(p: Path): Boolean = {
+    canExist(p) &&
+    p.toFile.exists
+  }
+  def exists(path: String): Boolean = {
+    Paths.get(path).toFile.exists
+  }
+//  def exists(p: Path): Boolean = {
+//    canExist(p) && {
+//      p.toFile match {
+//      case f if f.isDirectory => true
+//      case f                  => f.exists
+//      }
+//    }
+//  }
+
+  // drop drive letter and normalize backslash
+  def dropDefaultDrive(str: String) = str.replaceFirst(s"^${workingDrive}", "")
+  def dropDriveLetter(str: String)  = str.replaceFirst("^[a-zA-Z]:", "")
+  def asPosixPath(str: String)      = dropDriveLetter(str).replace('\\', '/')
+
+  def etcdir = getPath(posixroot, "etc") match {
+  case p if JFiles.isSymbolicLink(p) =>
+    p.toRealPath()
+  case p =>
+    p
+  }
+
+  def defaultCygdrivePrefix = _unameLong match {
+  case "cygwin" => "/cygdrive"
+  case _        => ""
+  }
+  lazy val (_mountMap, cygdrive2root) = {
+    if (_verbose) printf("etcdir[%s]\n", etcdir)
+    val fpath = JPaths.get(s"$etcdir/fstab")
+    // printf("fpath[%s]\n", fpath)
+    val lines: Seq[String] = if (fpath.toFile.isFile) {
+      val src = scala.io.Source.fromFile(fpath.toFile, "UTF-8")
+      src.getLines().toList.map { _.replaceAll("#.*$", "").trim }.filter { !_.isEmpty }
+    } else {
+      Nil
+    }
+
+    // printf("fpath.lines[%s]\n", lines.toSeq.mkString("\n"))
+    var (cygdrive, _usertemp) = ("", "")
+    // map order prohibits any key to contain an earlier key as a prefix.
+    // this implies the use of an ordered Map, and is necessary so that
+    // when converting posix-to-windows paths, the first matching prefix terminates the search.
+    var localMountMap = ListMap.empty[String, String]
+    var cd2r          = true // by default /c should mount to c:/ in windows
+    if (_isWindows) {
+      // cygwin provides default values, potentially overridden in fstab
+      val rr = posixrootBare
+      localMountMap += "/usr/bin" -> s"$rr/bin"
+      localMountMap += "/usr/lib" -> s"$rr/lib"
+      // next 2 are convenient, but MUST be added before reading fstab
+      localMountMap += "/bin" -> s"$rr/bin"
+      localMountMap += "/lib" -> s"$rr/lib"
+      for (line <- lines) {
+        // printf("line[%s]\n", line)
+        val cols = line.split("\\s+", -1).toList
+        val List(winpath, _mountpoint, fstype) = cols match {
+        case a :: b :: Nil       => a :: b :: "" :: Nil
+        case a :: b :: c :: tail => a :: b :: c :: Nil
+        case list                => sys.error(s"bad line in ${fpath}: ${list.mkString("|")}")
+        }
+        val mountpoint = _mountpoint.replaceAll("\\040", " ")
+        fstype match {
+        case "cygdrive" =>
+          cygdrive = mountpoint
+        case "usertemp" =>
+          _usertemp = mountpoint // need to parse it, but unused here
+        case _ =>
+          // fstype ignored
+          localMountMap += mountpoint -> winpath
+        }
+      }
+      cd2r = cygdrive == "/" // cygdrive2root (the cygwin default mapping)
+      if (cygdrive.isEmpty) {
+        cygdrive = defaultCygdrivePrefix
+      }
+      localMountMap += "/cygdrive" -> cygdrive
+
+      for (drive <- driveLetters) {
+        // lowercase posix drive letter, e.g. "C:" ==> "/c"
+        val letter = drive.string.toLowerCase // .take(1).toLowerCase
+        // winpath preserves uppercase DriveRoot (cygpath.exe behavior)
+        val winpath = stdpath(s"$drive/".path.toAbsolutePath)
+        localMountMap += s"/$letter" -> winpath
+      }
+    }
+    localMountMap += "/" -> posixroot // this must be last
+    (localMountMap, cd2r)
+  }
+
+  lazy val cygdrivePrefix = reverseMountMap.get("cygdrive").getOrElse("")
+
+  def fileLines(f: JFile): Seq[String] = {
+    Using.resource(new BufferedReader(new FileReader(f))) { reader =>
+      Iterator.continually(reader.readLine()).takeWhile(_ != null).toSeq
+    }
+  }
+
+  lazy val wsl: Boolean = {
+    val f                       = JPaths.get("/proc/version").toFile
+    def lines: Seq[String]      = fileLines(f)
+    def contentAsString: String = lines.mkString("\n")
+    val test0                   = f.isFile && contentAsString.contains("Microsoft")
+    val test1                   = _unameLong.contains("microsoft")
+    test0 || test1
+  }
+
+  def ostype = _uname("-s")
+
+  // this may be needed to replace `def canExist` in vastblue.os
+  lazy val driveLettersLc: List[String] = {
+    val values = mountMap.values.toList
+    val letters = {
+      for {
+        dl <- values.map { _.take(2) }
+        if dl.drop(1) == ":"
+      } yield dl.toLowerCase
+    }.distinct
+    letters
+  }
+
+  // useful for benchmarking functions
+  def time(n: Int, func: (String) => Any): Unit = {
+    val t0 = System.currentTimeMillis
+    for (i <- 0 until n) {
+      func("bash${exeSuffix}")
+    }
+    for (i <- 0 until n) {
+      func("bash")
+    }
+    val elapsed = System.currentTimeMillis - t0
+    printf("%d iterations in %9.6f seconds\n", n * 2, elapsed.toDouble / 1000.0)
+  }
+
+
+  /////////////////////////////////////////////////////////////////////
+  //
+
+  /*
+  def main(args: Array[String]): Unit = {
+    printf("runtime scala version: [%s]\n", vastblue.Info.scalaRuntimeVersion)
+    printf("SYSTEMDRIVE: %s\n", _envOrEmpty("SYSTEMDRIVE"))
+    for (arg <- args) {
+      val list = findAllInPath(arg)
+      printf("found %d [%s] in PATH:\n", list.size, arg)
+      for (path <- list) {
+        printf(" [%s] found at [%s]\n", arg, path.posx)
+        printf("--version: [%s]\n", getStdout(path.posx, "--version").take(1).mkString)
+      }
+    }
+    val pwd = ".".path.toAbsolutePath
+
+    for ((p: Path) <- pwd.paths if p.isDirectory) {
+      printf("%s\n", p.posx)
+    }
+
+    val meminfo = "/proc/meminfo".path
+    for (line <- meminfo.lines) {
+      printf("%s\n", line)
+    }
+
+    for (progname <- prognames) {
+      val prog = _where(progname)
+      printf("%-12s: %s\n", progname, prog)
+    }
+
+    printf("cygdrive     [%s]\n", cygdrive)
+    printf("bashPath     [%s]\n", _bashPath)
+    printf("cygpathExe   [%s]\n", cygpathExe)
+    printf("posixroot    [%s]\n", posixroot)
+    printf("osName       [%s]\n", _osName)
+    printf("unameLong    [%s]\n", _unameLong)
+    printf("unameshort   [%s]\n", _unameShort)
+    printf("isCygwin     [%s]\n", _isCygwin)
+    printf("isMsys64     [%s]\n", _isMsys)
+    printf("isMingw64    [%s]\n", _isMingw)
+    printf("isGitSdk64   [%s]\n", _isGitSdk)
+    printf("isWinshell   [%s]\n", _isWinshell)
+    printf("bash in path [%s]\n", findInPath("bash").getOrElse(""))
+    printf("cygdrive2root[%s]\n", cygdrive2root)
+    printf("wsl          [%s]\n", wsl)
+    printf("javaHome     [%s]\n", _javaHome)
+    printf("etcdir       [%s]\n", etcdir)
+
+    printf("\n")
+    printf("all bash in path:\n")
+    val bashlist = findAllInPath("bash")
+    for (path <- bashlist) {
+      printf(" found at %-36s : ", s"[$path]")
+      printf("--version: [%s]\n", _exec(path.toString, "--version").takeWhile(_ != '('))
+    }
+    if (possibleWinshellRootDirs.nonEmpty) {
+      printf("\nfound %d windows shell root dirs:\n", possibleWinshellRootDirs.size)
+      for (root <- possibleWinshellRootDirs) {
+        printf(" %s\n", root)
+      }
+    }
+  }
+
+  lazy val prognames = Seq(
+    "basename",
+    "bash",
+    "cat",
+    "chgrp",
+    "chmod",
+    "chown",
+    "cksum",
+    "cp",
+    "curl",
+    "date",
+    "diff",
+    "env",
+    "file",
+    "find",
+    "git",
+    "gzip",
+    "head",
+    "hostname",
+    "ln",
+    "ls",
+    "md5sum",
+    "mkdir",
+    "nohup",
+    "uname"
+  )
+  */
 }

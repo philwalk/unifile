@@ -1,5 +1,5 @@
-val SONATYPE_VERSION = sys.env.getOrElse("SONATYPE_VERSION", "3.9.21")
-addSbtPlugin("ch.epfl.scala"  % "sbt-bloop"     % "1.5.11")
+val SONATYPE_VERSION = sys.env.getOrElse("SONATYPE_VERSION", "3.10.0") // "3.9.21")
+addSbtPlugin("ch.epfl.scala"  % "sbt-bloop"     % "1.5.13")
 addSbtPlugin("ch.epfl.scala"  % "sbt-scalafix"  % "0.11.1")
 addSbtPlugin("org.xerial.sbt" % "sbt-sonatype"  % SONATYPE_VERSION)
 addSbtPlugin("org.scalameta"  % "sbt-scalafmt"  % "2.5.2")

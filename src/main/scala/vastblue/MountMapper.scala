@@ -1,34 +1,82 @@
 package vastblue
 
+import vastblue.DriveRoot.*
+import vastblue.Platform.{_execLines, _notWindows, _pwd, _shellRoot, cygpathExe, posixrootBare, workingDrive}
+import vastblue.file.Util.readLines
+import vastblue.util.Utils.isAlpha
+//import vastblue.Platform.*
+//import vastblue.file.Paths.canExist
+import vastblue.util.PathExtensions.*
 import java.io.{File => JFile}
 import java.nio.file.Path
 import java.nio.file.{Files => JFiles, Paths => JPaths}
 import java.io.{BufferedReader, FileReader}
 import scala.collection.immutable.ListMap
 import scala.util.Using
-import scala.sys.process._
-import java.nio.charset.Charset
-import vastblue.DriveRoot._
-import vastblue.Platform.*
-import vastblue.file.Paths.canExist
-import vastblue.util.PathExtensions
+import scala.sys.process.*
 
 /*
  * Supported environments:
  * Unix / Linux / OSX, Windows shell environments (CYGWIN64, MINGW64,
  * MSYS2, GIT-BASH, etc.).
  */
-object MountMapper extends PathExtensions {
+object MountMapper {
   private var hook = 0
 
-  // Mount entries cause things to appear below C:/msys64/ directory
+  // Mount entries to appear below shellRoot directory (e.g., C:/msys64/)
   // /data and /etc appear to have the same parent directory, but:
   //    /data is C:/data
   //    /etc is c:/msys64/etc
   // /etc is not mounted, but also must be translated a-la cygpath:
   //    translate mounted entry, if present
   //    otherwise, replace '/' with C:/msys64
-  lazy val etcFstab   = s"$posixroot/etc/fstab".replaceAll("[\\/]+", "/")
+  lazy val etcFstab   = s"$shellRoot/etc/fstab".replaceAll("[\\/]+", "/")
+
+ 
+  // mutable fields to support unit testing
+  private var _mountMap = Map.empty[String, String]
+  def mountMap: Map[String, String] = _mountMap
+  def mountMap_=(map: Map[String, String]): Unit = _mountMap = map
+
+  private var _cygdrive: String = ""
+  def cygdrive: String = _cygdrive
+  def cygdrive_=(s: String): Unit = _cygdrive = s
+
+  private var _reverseMountMap = Map.empty[String, String]
+  def reverseMountMap: Map[String, String] = _reverseMountMap
+  def reverseMountMap_=(map: Map[String, String]): Unit = _reverseMountMap = map
+
+  private var _posix2localMountMap = Map.empty[String, String]
+  def posix2localMountMap: Map[String, String] = _posix2localMountMap
+  def posix2localMountMap_=(map: Map[String, String]): Unit = _posix2localMountMap = map
+
+  case class FsEntry(dir: String, posix: String, ftype: String) {
+    override def toString = "%-22s, %-18s, %s".format(dir, posix, ftype)
+  }
+
+  {
+    val map = readFstabEntries(etcFstab).map { (e: FsEntry) => (e.posix -> e.dir) }.toMap
+    consumeMountMap(map)
+  }
+
+  /*
+  private lazy val (_cygdrive: String, posix2localMountMap: Map[String, String], reverseMountMap: Map[String, String]) = {
+    val (cygdrive, posix2local, reverseMap) = consumeMountMap()
+    (cygdrive, posix2local, reverseMap)
+  }
+  */
+
+  def consumeMountMap(map: Map[String, String]): Unit = {
+    def emptyMap = Map.empty[String, String]
+    if (_notWindows || _shellRoot.isEmpty) {
+      ("", emptyMap, emptyMap)
+    } else {
+      // update mutable fields
+      mountMap        = map.toList.map { case (k: String, v: String) => (k.toLowerCase -> v) }.toMap
+      reverseMountMap = map.toList.map { case (k: String, v: String) => (v.toLowerCase -> k) }.toMap
+      cygdrive = reverseMountMap.get("cygdrive").getOrElse("")
+    }
+  }
 
   def readFstabEntries(fstabPath: String): Seq[FsEntry] = {
     val f = JPaths.get(fstabPath)
@@ -55,99 +103,8 @@ object MountMapper extends PathExtensions {
     entries
   }
 
-  // mount map 
-  lazy val mountMap = {
-    readFstabEntries(etcFstab).map { (e: FsEntry) => (e.posix -> e.dir) }.toMap
-  }
-  lazy val (_cygdrive: String, posix2localMountMap: Map[String, String], reverseMountMap: Map[String, String]) = {
-    val (cygdrive, posix2local, reverseMap) = consumeMountMap()
-    (cygdrive, posix2local, reverseMap)
-  }
-
-  def consumeMountMap(mountMap: Map[String, String] = mountMap): (String, Map[String, String], Map[String, String]) = {
-    def emptyMap = Map.empty[String, String]
-    if (_notWindows || _shellRoot.isEmpty) {
-      ("", emptyMap, emptyMap)
-    } else {
-      val mmap = mountMap.toList.map { case (k: String, v: String) => (k.toLowerCase -> v) }.toMap
-      val rmap = mountMap.toList.map { case (k: String, v: String) => (v.toLowerCase -> k) }.toMap
-      val cygdrive = rmap.get("cygdrive").getOrElse("/")
-
-      vastblue.Platform.cygdrive = cygdrive // update Platform.cygdrive
-      (cygdrive, mmap, rmap)
-    }
-  }
-
-  case class FsEntry(dir: String, posix: String, ftype: String) {
-    override def toString = "%-22s, %-18s, %s".format(dir, posix, ftype)
-  }
 
   lazy val cygdrivePrefix = reverseMountMap.get("cygdrive").getOrElse("")
-
-  lazy val (_mountMap, cygdrive2root) = {
-    if (_verbose) printf("etcdir[%s]\n", etcdir)
-    val fpath = JPaths.get(s"$etcdir/fstab")
-    // printf("fpath[%s]\n", fpath)
-    val lines: Seq[String] = if (fpath.toFile.isFile) {
-      val src = scala.io.Source.fromFile(fpath.toFile, "UTF-8")
-      src.getLines().toList.map { _.replaceAll("#.*$", "").trim }.filter { !_.isEmpty }
-    } else {
-      Nil
-    }
-
-    // printf("fpath.lines[%s]\n", lines.toSeq.mkString("\n"))
-    var (cygdrive, _usertemp) = ("", "")
-
-    // map order prohibits any key to contain an earlier key as a prefix.
-    // this implies the use of an ordered Map, and is necessary so that
-    // when converting posix-to-windows paths, the first matching prefix terminates the search.
-    var localMountMap = ListMap.empty[String, String]
-    var cd2r          = true // by default /c should mount to c:/ in windows
-    if (_isWindows) {
-      // cygwin provides default values, potentially overridden in fstab
-      val rr = posixrootBare
-      localMountMap += "/usr/bin" -> s"$rr/bin"
-      localMountMap += "/usr/lib" -> s"$rr/lib"
-      // next 2 are convenient, but MUST be added before reading fstab
-      localMountMap += "/bin" -> s"$rr/bin"
-      localMountMap += "/lib" -> s"$rr/lib"
-      for (line <- lines) {
-        // printf("line[%s]\n", line)
-        val cols = line.split("\\s+", -1).toList
-        val List(winpath, _mountpoint, fstype) = cols match {
-        case a :: b :: Nil       => a :: b :: "" :: Nil
-        case a :: b :: c :: tail => a :: b :: c :: Nil
-        case list                => sys.error(s"bad line in ${fpath}: ${list.mkString("|")}")
-        }
-        val mountpoint = _mountpoint.replaceAll("\\040", " ")
-        fstype match {
-        case "cygdrive" =>
-          cygdrive = mountpoint
-        case "usertemp" =>
-          _usertemp = mountpoint // need to parse it, but unused here
-        case _ =>
-          // fstype ignored
-          localMountMap += mountpoint -> winpath
-        }
-      }
-      cd2r = cygdrive == "/" // cygdrive2root (the cygwin default mapping)
-      if (cygdrive.isEmpty) {
-        cygdrive = defaultCygdrivePrefix
-      }
-      localMountMap += "/cygdrive" -> cygdrive
-
-      for (drive <- driveLetters) {
-        // lowercase posix drive letter, e.g. "C:" ==> "/c"
-        val letter = drive.string.toLowerCase // .take(1).toLowerCase
-        // winpath preserves uppercase DriveRoot (cygpath.exe behavior)
-        val dp = JPaths.get(s"$drive/").toAbsolutePath
-        val winpath = stdpath(dp)
-        localMountMap += s"/$letter" -> winpath
-      }
-    }
-    localMountMap += "/" -> posixroot // this must be last
-    (localMountMap, cd2r)
-  }
 
   // this may be needed to replace `def canExist` in vastblue.os
   lazy val driveLettersLc: List[String] = {
@@ -161,17 +118,17 @@ object MountMapper extends PathExtensions {
     letters
   }
 
-  def etcdir = JPaths.get(posixroot, "etc") match {
+  def etcdir = JPaths.get(shellRoot, "etc") match {
   case p if p.isSymbolicLink =>
     p.toRealPath()
   case p =>
     p
   }
 
-  def defaultCygdrivePrefix = _unameLong match {
-  case "cygwin" => "/cygdrive"
-  case _        => ""
-  }
+//  def defaultCygdrivePrefix = _unameLong match {
+//  case "cygwin" => "/cygdrive"
+//  case _        => ""
+//  }
   
   def fileLines(f: JFile): Seq[String] = {
     Using.resource(new BufferedReader(new FileReader(f))) { reader =>
@@ -179,33 +136,7 @@ object MountMapper extends PathExtensions {
     }
   }
 
-  /*
-  lazy val wsl: Boolean = {
-    val f                       = JPaths.get("/proc/version").toFile
-    def lines: Seq[String]      = fileLines(f)
-    def contentAsString: String = lines.mkString("\n")
-    val test0                   = f.isFile && contentAsString.contains("Microsoft")
-    val test1                   = _unameLong.contains("microsoft")
-    test0 || test1
-  }
-  */
-
-  def ostype = _uname("-s")
-
-  // useful for benchmarking functions
-  /*
-  def time(n: Int, func: (String) => Any): Unit = {
-    val t0 = System.currentTimeMillis
-    for (i <- 0 until n) {
-      func("bash${exeSuffix}")
-    }
-    for (i <- 0 until n) {
-      func("bash")
-    }
-    val elapsed = System.currentTimeMillis - t0
-    printf("%d iterations in %9.6f seconds\n", n * 2, elapsed.toDouble / 1000.0)
-  }
-  */
+//  def ostype = _uname("-s")
 
   // TODO: for WSL, provide `wslpath`
   // by default, returns -m path
@@ -253,51 +184,51 @@ object MountMapper extends PathExtensions {
     cygMstr.replaceAll("//+", "/")
   }
 
-  lazy val DriveLetterColonPattern = "([a-zA-Z]):(.*)?".r
-  lazy val CygdrivePattern         = s"${_cygdrive}([a-zA-Z])(/.*)?".r
+//  lazy val DriveLetterColonPattern = "([a-zA-Z]):(.*)?".r
+//  lazy val CygdrivePattern         = s"${_cygdrive}([a-zA-Z])(/.*)?".r
 
-  def pathsGetPrev(psxStr: String): Path = {
-    val _normpath = psxStr.replace('\\', '/')
-    val normpath = _normpath.take(_cygdrive.length+1) match {
-    case dl if dl.startsWith("/") =>
-      // apply mount map to paths with leading slash
-      applyPosix2LocalMount(_normpath) // becomes absolute, if mounted
-    case _ =>
-      _normpath
-    }
-    def dd = driveRoot.toUpperCase.take(1)
-    val (literalDrive, impliedDrive, pathtail) = normpath match {
-    case DriveLetterColonPattern(dl, tail) => // windows drive letter
-      (dl, dl, tail)
-    case CygdrivePattern(dl, tail) => // cygpath drive letter
-      (dl, dl, tail)
-    case pstr if pstr.matches("/proc(/.*)?") => // /proc file system
-      ("", "", pstr) // must not specify a drive letter!
-    case pstr if pstr.startsWith("/") => // drive-relative path, with no drive letter
-      // drive-relative paths are on the current-working-drive,
-      ("", dd, pstr)
-    case pstr => // relative path, implies default drive
-      (dd, "", pstr)
-    }
-    val semipath          = Option(pathtail).getOrElse("/")
-    val neededDriveLetter = if (impliedDrive.nonEmpty) s"$impliedDrive:" else ""
-    val fpstr             = s"${neededDriveLetter}$semipath" // derefTilde(psxStr)
-    if (literalDrive.nonEmpty) {
-      // no need for cygpath if drive is unambiguous.
-      val fpath =
-        if (fpstr.endsWith(":") && fpstr.take(3).length == 2 && fpstr.equalsIgnoreCase(driveRoot)) {
-          // fpstr is a drive letter expression.
-          // Windows interprets a bare drive letter expression as
-          // the "working directory" each drive had at jvm startup.
-          _pwd
-        } else {
-          JPaths.get(fpstr)
-        }
-      normPath(fpath)
-    } else {
-      JPaths.get(fpstr)
-    }
-  }
+//  def pathsGetPrev(psxStr: String): Path = {
+//    val _normpath = psxStr.replace('\\', '/')
+//    val normpath = _normpath.take(_cygdrive.length+1) match {
+//    case dl if dl.startsWith("/") =>
+//      // apply mount map to paths with leading slash
+//      applyPosix2LocalMount(_normpath) // becomes absolute, if mounted
+//    case _ =>
+//      _normpath
+//    }
+//    def dd = driveRoot.toUpperCase.take(1)
+//    val (literalDrive, impliedDrive, pathtail) = normpath match {
+//    case DriveLetterColonPattern(dl, tail) => // windows drive letter
+//      (dl, dl, tail)
+//    case CygdrivePattern(dl, tail) => // cygpath drive letter
+//      (dl, dl, tail)
+//    case pstr if pstr.matches("/proc(/.*)?") => // /proc file system
+//      ("", "", pstr) // must not specify a drive letter!
+//    case pstr if pstr.startsWith("/") => // drive-relative path, with no drive letter
+//      // drive-relative paths are on the current-working-drive,
+//      ("", dd, pstr)
+//    case pstr => // relative path, implies default drive
+//      (dd, "", pstr)
+//    }
+//    val semipath          = Option(pathtail).getOrElse("/")
+//    val neededDriveLetter = if (impliedDrive.nonEmpty) s"$impliedDrive:" else ""
+//    val fpstr             = s"${neededDriveLetter}$semipath" // derefTilde(psxStr)
+//    if (literalDrive.nonEmpty) {
+//      // no need for cygpath if drive is unambiguous.
+//      val fpath =
+//        if (fpstr.endsWith(":") && fpstr.take(3).length == 2 && fpstr.equalsIgnoreCase(driveRoot)) {
+//          // fpstr is a drive letter expression.
+//          // Windows interprets a bare drive letter expression as
+//          // the "working directory" each drive had at jvm startup.
+//          _pwd
+//        } else {
+//          JPaths.get(fpstr)
+//        }
+//      normPath(fpath)
+//    } else {
+//      JPaths.get(fpstr)
+//    }
+//  }
 
   def normPath(_pathstr: String): Path = {
     val jpath: Path = _pathstr match {
@@ -306,6 +237,7 @@ object MountMapper extends PathExtensions {
     }
     normPath(jpath)
   }
+
   def normPath(path: Path): Path = try {
     val s = path.toString
     if (s.length == 2 && s.take(2).endsWith(":")) {
@@ -317,9 +249,10 @@ object MountMapper extends PathExtensions {
     case e: java.io.IOError =>
       path
   }
+
   /*
    * Convert pathstr by applying mountMap (if mounted)
-   * else by add shellRoot prefix (if `driveRelative`)
+   * else by adding shellRoot prefix (if `driveRelative`)
    */
   def applyPosix2LocalMount(pathstr: String): String = {
     require(pathstr.take(2).last != ':', s"bad argument : ${pathstr}")
@@ -489,7 +422,7 @@ object MountMapper extends PathExtensions {
     localMountMap
   }
 
-  lazy val posix2localMountMapKeyset = posix2localMountMap.keySet.toSeq.sortBy { -_.length }
+  def posix2localMountMapKeyset: Seq[String] = posix2localMountMap.keySet.toSeq.sortBy { -_.length }
 
   /*
    * @return Some(mapKey) matching pathstr prefix, else None.
