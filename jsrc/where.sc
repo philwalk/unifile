@@ -1,14 +1,17 @@
 #!/usr/bin/env -S scala
+package vastblue.demo
 
-import vastblue.pallet._
+import vastblue.unifile.*
 
-def main(args: Array[String]): Unit = {
-  import scala.sys.process._
-  val name = if (isWindows) {
-    "where.exe"
-  } else {
-    "which"
+object Where {
+  def main(args: Array[String]): Unit = {
+    import scala.sys.process._
+    val name = if (isWindows) {
+      "where.exe"
+    } else {
+      "which"
+    }
+    val whereExe = Seq(name, name).lazyLines_!.take(1).toList.mkString("").replace('\\', '/')
+    printf("path of [%s] is [%s]\n", name, whereExe)
   }
-  val whereExe = Seq(name, name).lazyLines_!.take(1).toList.mkString("").replace('\\', '/')
-  printf("path of [%s] is [%s]\n", name, whereExe)
 }

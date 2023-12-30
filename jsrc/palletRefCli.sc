@@ -1,9 +1,10 @@
 #!/usr/bin/env -S scala-cli shebang
+//package vastblue.demo
 
 //> using scala "3.3.1"
-//> using lib "org.vastblue::pallet::0.10.1"
+//> using lib "org.vastblue::unifile:0.2.2"
 
-import vastblue.pallet._
+import vastblue.unifile.*
 
 def main(args: Array[String]): Unit = {
   // show system memory info
@@ -16,7 +17,7 @@ def main(args: Array[String]): Unit = {
   // list child directories of "."
   val cwd: Path = ".".path
   for ((p: Path) <- cwd.paths.filter { _.isDirectory }) {
-    printf("%s\n", p.norm)
+    printf("%s\n", p.posx)
   }
 }
 main(args)

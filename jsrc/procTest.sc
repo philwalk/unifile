@@ -1,8 +1,8 @@
 #!/usr/bin/env -S scala
-//package vastblue
+package vastblue.demo
 
-import vastblue.pallet._
-import vastblue.file.ProcfsPaths._
+import vastblue.unifile.*
+import vastblue.file.ProcfsPaths.*
 
 object ProcTest {
   var verbose = false

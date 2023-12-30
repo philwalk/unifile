@@ -2,9 +2,8 @@ package vastblue.file
 
 import vastblue.unifile.*
 import vastblue.Platform
-import vastblue.Platform.{_pwd, pwdposx}
+import vastblue.Platform.{_pwd, here, hereDrive, pwdposx, uhere}
 import vastblue.util.Utils.isSameFile
-
 import org.scalatest.*
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
@@ -36,19 +35,21 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
     // verify test invariants
     describe ("working drive") {
       it (" should be correct for os") {
+        val hd = Platform.hereDrive
         if (isWindows) {
-          assert(hereDrive.matches("[a-zA-Z]:"))
+          assert(hd.matches("[a-zA-Z]:"))
         } else {
-          assert(hereDrive.isEmpty)
+          assert(hd.isEmpty)
         }
       }
     }
     describe("pwd") {
       it ("should be correct wrt rootDrive for os") {
+        val currentWorkingDrive = Platform.here.take(2).mkString
         if (isWindows) {
-          assert(here.take(2).matches("[a-zA-Z]:"))
+          assert(currentWorkingDrive.matches("[a-zA-Z]:"))
         } else {
-          assert(!here.take(2).mkString.contains(":"))
+          assert(currentWorkingDrive.isEmpty)
         }
       }
     }
@@ -334,23 +335,6 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
     val p = Paths.get(homeDirTestFile)
     touch(p)
     p
-  }
-
-  lazy val here  = _pwd.toAbsolutePath.normalize.toString.toLowerCase.replace('\\', '/')
-  lazy val uhere = here.replaceFirst("^[a-zA-Z]:", "")
-
-  lazy val hereDrive = {
-    val hd = here.replaceAll(":.*$", "")
-    hd match {
-    case drive if drive >= "a" && drive <= "z" =>
-      s"$drive:"
-    case _ =>
-      if (isWindows) {
-        System.err.println(s"internal error: _pwd[$_pwd], here[$here], uhere[$uhere]")
-        sys.error("hereDrive error")
-      }
-      ""
-    }
   }
 
   lazy val dosHomeDir: String   = sys.props("user.home")

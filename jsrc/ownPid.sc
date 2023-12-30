@@ -1,13 +1,13 @@
 #!/usr/bin/env -S scala @./.scala3cp -deprecation
-package vastblue
+package vastblue.demo
 
-import vastblue.pallet._
+import vastblue.unifile.*
 import vastblue.MainArgs
 
 object OwnPid {
   def main(args: Array[String]): Unit = {
     try {
-      val argv = MainArgs.prepArgs(args.toSeq)
+      val argv = MainArgs.prepArgv(args.toSeq)
       for ((arg, i) <- argv.zipWithIndex) {
         printf("%2d: [%s]\n", i, arg)
       }

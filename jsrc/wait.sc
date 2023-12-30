@@ -1,7 +1,7 @@
 #!/usr/bin/env -S scala
-package vastblue
+package vastblue.demo
 
-import vastblue.pallet._
+import vastblue.unifile.*
 
 object Wait {
   def main(args: Array[String]): Unit = {

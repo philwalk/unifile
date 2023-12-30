@@ -3,29 +3,20 @@
  * Support for writing portable/posix scala scripts.
  *
  * Supported environments:
- * Unix / Linux / OSX, Windows shell environments (CYGWIN64, MINGW64,
- * MSYS2, GIT-BASH, etc.).
+ * Unix / Linux / OSX,
+ * Windows shell environments
+ *   CYGWIN, MINGW, MSYS2, GIT-BASH, GITSDK, CLANG, etc.
  *
- * convenience fields:
- * bashPath: Path      : path to bash executable
- * posixroot: String   : root directory of the shell environment
- * unamefull: String   : value reported by `uname -a`
+ * Boolean builtins to identify the runtime environment:  
+ *   isDarwin:   Boolean == true if running Osx / Darwin
+ *   isLinux:    Boolean == true if running Osx / Darwin
+ *   isCygwin:   Boolean == true if running cygwin64
+ *   isMsys:     Boolean == true if running msys64
+ *   isMingw:    Boolean == true if running mingw64
+ *   isGitSdk:   Boolean == true if running gitsdk
+ *   isGitbash:  Boolean == true if running gitsdk
+ *   isMingw:    Boolean == true if running mingw64
+ *   isWinshell: Boolean == (isCygwin||isMsys||isMingw||isGitSdk||isGitbash)
+ *   isWsl:      Boolean == true if running in Windows WSL environment
  *
- * To identify the environment:
- *   isCygwin: Boolean   : true if running cygwin64
- *   isMsys64: Boolean   : true if running msys64
- *   isMingw64: Boolean  : true if running mingw64
- *   isGitSdk64: Boolean : true if running gitsdk
- *   isMingw64: Boolean  : true if running mingw64
- *   isWinshell
- *   wsl: Boolean
- *
- * The preferred way to find an executable on the PATH (very fast):
- *   val p: Path = findInPath(binaryName)
- *
- * A Fallback method (much slower):
- *   val path: String = whichPath(binaryName)
- *
- * How to determine where msys2/ mingw64 / cygwin64 is installed?
- *   posixroot
  */

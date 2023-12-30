@@ -1,7 +1,7 @@
 #!/usr/bin/env -S scala @./atFile
-//package vastblue.demo
+package vastblue.demo
 
-import vastblue.pallet._
+import vastblue.unifile.*
 import vastblue.MainArgs
 
 object Demo {
@@ -16,10 +16,10 @@ object Demo {
       // list child directories of the current working directory
       val cwd: Path = ".".path
       for ((p: Path) <- cwd.paths.filter { _.isDirectory }) {
-        printf("%s\n", p.norm)
+        printf("%s\n", p.posx)
       }
 
-      val argv = MainArgs.prepArgs(args.toSeq)
+      val argv = MainArgs.prepArgv(args.toSeq)
       for ((arg, i) <- argv.zipWithIndex) {
         printf("%2d: [%s]\n", i, arg)
       }

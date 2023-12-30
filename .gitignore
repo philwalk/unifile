@@ -44,4 +44,3 @@ jsrc/*.jar
 .bloop/
 metals.sbt
 .vscode
-*Atfile

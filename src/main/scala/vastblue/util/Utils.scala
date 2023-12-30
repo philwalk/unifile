@@ -192,21 +192,9 @@ object Utils  {
     p // not a symlink
   }
 
-//  def realpathLs(p: Path): Path = { // ask ls what symlink references
-//    val pnorm = nativePathString(p)
-//    _exec("ls", "-l", pnorm).split("\\s+->\\s+").toList match {
-//    case a :: b :: Nil =>
-//      Paths.get(b)
-//    case _ =>
-//      p
-//    }
-//  }
-
-  def SCALA_HOME = Option(System.getenv("SCALA_HOME")).getOrElse("")
-  def scalaHome  = Option(sys.props("scala.home")).getOrElse(SCALA_HOME)
-
   def scala3Version = {
-    val versionFile = Paths.get(s"$scalaHome/VERSION")
+    val sh = scalaHome
+    val versionFile = Paths.get(s"$sh/VERSION")
     if (versionFile.toFile.exists) {
       scala.io.Source.fromFile(versionFile.toFile).getLines().take(1).mkString.replaceFirst("version:=","")
     } else {

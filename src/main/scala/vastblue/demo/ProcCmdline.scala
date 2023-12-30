@@ -1,5 +1,5 @@
-//#!/usr/bin/env -S scala -deprecation -cp target/scala-3.3.1/classes
-package vastblue
+//#!/usr/bin/env -S scala -deprecation
+package vastblue.demo
 
 import vastblue.Platform.*
 import vastblue.file.ProcfsPaths.*
@@ -11,6 +11,10 @@ object ProcCmdline {
       arg match {
       case "-v" =>
         verbose = true
+      case arg =>
+        printf("unrecognized arg [%s]\n", arg)
+        printf("usage: %s <arg1> [<arg2> ...]\n", scriptName)
+        sys.exit(1)
       }
     }
     if (_isLinux || _isWinshell) {

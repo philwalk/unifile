@@ -241,10 +241,16 @@ object Platform {
   }
 
   // get path to binaryName via 'which.exe' or 'where'
-  def _where(binaryName: String): String = {
+  lazy val nonBinaries = Seq(
+    "scala",
+  )
+  def _where(progName: String): String = {
+    if (nonBinaries.contains(progName)) {
+      hook += 1
+    }
     if (_isWindows) {
       // prefer binary with .exe extension, ceteris paribus
-      val binName = setSuffix(binaryName)
+      val binName = if (nonBinaries.contains(progName)) progName else setSuffix(progName)
       // getStdout hides stderr: INFO: Could not find files for the given pattern(s)
       val fname: String = getStdout(whereExe, binName).take(1).toList match {
       case Nil =>
@@ -254,7 +260,7 @@ object Platform {
       }
       fname.replace('\\', '/')
     } else {
-      _exec("which", binaryName)
+      _exec("which", progName)
     }
   }
 
@@ -328,10 +334,12 @@ object Platform {
   def _isWinshell: Boolean = _isMsys | _isCygwin | _isMingw | _isGitSdk | _isGitbash
   def _isDarwin: Boolean   = _osType == "darwin"
 
-  def _javaHome: String  = _propElseEnv("java.home", "JAVA_HOME")
-  def _scalaHome: String = _propElseEnv("scala.home", "SCALA_HOME") match {
-    case "" => "C:/opt/scala" // should only happen in the IDE, if environment is configured correctly
-    case s => s
+  def _javaHome: String  = _propElseEnv("java.home", JAVA_HOME)
+  def _scalaHome: String = _propElseEnv("scala.home", SCALA_HOME) match {
+    case "" =>
+      "C:/opt/scala" // should only happen in the IDE, if environment is configured correctly
+    case s =>
+      s
   }
   def _username: String  = _propOrElse("user.name", "unknown")
   def _userhome: String  = _propOrElse("user.home", _envOrElse("HOST", "unknown")).replace('\\', '/')
@@ -355,13 +363,26 @@ object Platform {
 
   // executable Paths
   def _bashPath: Path  = _pathCache("bash")
-//  def _catPath: Path   = _pathCache("cat")
-//  def _findPath: Path  = _pathCache("find")
-//  def _whichPath: Path = _pathCache("which")
-//  def _unamePath: Path = _pathCache("uname")
-//  def _lsPath: Path    = _pathCache("ls")
-//  def _trPath: Path    = _pathCache("tr")
-//  def _psPath: Path    = _pathCache("ps")
+
+
+  def shell: String = _envOrElse("SHELL", ideShell)
+  
+  def ideShell: String = {
+    if (intellij && isWinshell){
+      "/usr/bin/bash"
+    } else {
+      "/bin/bash"
+    }
+  }
+  def intellij : Boolean = {
+    var intellij = try {
+      classOf[Nothing].getClassLoader.loadClass("com.intellij.rt.execution.application.AppMainV2") != null
+    } catch {
+      case e: ClassNotFoundException =>
+        false
+    }
+    intellij
+  }
 
   // executable Path Strings, suitable for calling exec("bash", ...)
   def _bashExe: String  = _exeCache("bash")
@@ -398,6 +419,9 @@ object Platform {
   lazy val driveRoot = JPaths.get("").toAbsolutePath.getRoot.toString.take(2)
 
   def _pathCache(name: String): Path = {
+    if (name == "scala") {
+      hook += 1
+    }
     val exePath = foundPaths.get(name) match {
     case Some(path) =>
       path
@@ -444,7 +468,7 @@ object Platform {
     }
   }
 
-  def prepArgs(args: String*): Seq[String] = {
+  def prepExecArgs(args: String*): Seq[String] = {
     args.take(1) match {
     case Nil =>
       sys.error(s"missing program name")
@@ -460,7 +484,7 @@ object Platform {
    * Stderr is handled by `func` (println by default).
    */
   def executeCmd(_cmd: Seq[String])(func: String => Unit = System.err.println): (Int, List[String]) = {
-    val cmd    = prepArgs(_cmd: _*).toArray
+    val cmd    = prepExecArgs(_cmd: _*).toArray
     var stdout = List[String]()
 
     val exit = Process(cmd) ! ProcessLogger(
@@ -1152,96 +1176,34 @@ object Platform {
     printf("%d iterations in %9.6f seconds\n", n * 2, elapsed.toDouble / 1000.0)
   }
 
-
-  /////////////////////////////////////////////////////////////////////
-  //
-
-  /*
-  def main(args: Array[String]): Unit = {
-    printf("runtime scala version: [%s]\n", vastblue.Info.scalaRuntimeVersion)
-    printf("SYSTEMDRIVE: %s\n", _envOrEmpty("SYSTEMDRIVE"))
-    for (arg <- args) {
-      val list = findAllInPath(arg)
-      printf("found %d [%s] in PATH:\n", list.size, arg)
-      for (path <- list) {
-        printf(" [%s] found at [%s]\n", arg, path.posx)
-        printf("--version: [%s]\n", getStdout(path.posx, "--version").take(1).mkString)
-      }
-    }
-    val pwd = ".".path.toAbsolutePath
-
-    for ((p: Path) <- pwd.paths if p.isDirectory) {
-      printf("%s\n", p.posx)
-    }
-
-    val meminfo = "/proc/meminfo".path
-    for (line <- meminfo.lines) {
-      printf("%s\n", line)
-    }
-
-    for (progname <- prognames) {
-      val prog = _where(progname)
-      printf("%-12s: %s\n", progname, prog)
-    }
-
-    printf("cygdrive     [%s]\n", cygdrive)
-    printf("bashPath     [%s]\n", _bashPath)
-    printf("cygpathExe   [%s]\n", cygpathExe)
-    printf("posixroot    [%s]\n", posixroot)
-    printf("osName       [%s]\n", _osName)
-    printf("unameLong    [%s]\n", _unameLong)
-    printf("unameshort   [%s]\n", _unameShort)
-    printf("isCygwin     [%s]\n", _isCygwin)
-    printf("isMsys64     [%s]\n", _isMsys)
-    printf("isMingw64    [%s]\n", _isMingw)
-    printf("isGitSdk64   [%s]\n", _isGitSdk)
-    printf("isWinshell   [%s]\n", _isWinshell)
-    printf("bash in path [%s]\n", findInPath("bash").getOrElse(""))
-    printf("cygdrive2root[%s]\n", cygdrive2root)
-    printf("wsl          [%s]\n", wsl)
-    printf("javaHome     [%s]\n", _javaHome)
-    printf("etcdir       [%s]\n", etcdir)
-
-    printf("\n")
-    printf("all bash in path:\n")
-    val bashlist = findAllInPath("bash")
-    for (path <- bashlist) {
-      printf(" found at %-36s : ", s"[$path]")
-      printf("--version: [%s]\n", _exec(path.toString, "--version").takeWhile(_ != '('))
-    }
-    if (possibleWinshellRootDirs.nonEmpty) {
-      printf("\nfound %d windows shell root dirs:\n", possibleWinshellRootDirs.size)
-      for (root <- possibleWinshellRootDirs) {
-        printf(" %s\n", root)
-      }
-    }
+  def _scalaPath: Path  = _pathCache("scala")
+  lazy val SCALA_HOME = {
+    val sp = _scalaPath
+    val _scalaHome: String = sp.getParentFile.posx.replaceFirst("/bin$", "")
+    val sh = System.getenv("SCALA_HOME")
+    Option(sh).getOrElse(_scalaHome)
   }
 
-  lazy val prognames = Seq(
-    "basename",
-    "bash",
-    "cat",
-    "chgrp",
-    "chmod",
-    "chown",
-    "cksum",
-    "cp",
-    "curl",
-    "date",
-    "diff",
-    "env",
-    "file",
-    "find",
-    "git",
-    "gzip",
-    "head",
-    "hostname",
-    "ln",
-    "ls",
-    "md5sum",
-    "mkdir",
-    "nohup",
-    "uname"
-  )
-  */
+  def _javaPath: Path  = _pathCache("java")
+  lazy val JAVA_HOME = {
+    val _javaHome: String = _javaPath.getParentFile.posx
+    val jh = System.getenv("JAVA_HOME")
+    Option(jh).getOrElse(_javaHome)
+  }
+
+  lazy val here  = _pwd.toAbsolutePath.normalize.toString.toLowerCase.replace('\\', '/')
+  lazy val uhere = here.replaceFirst("^[a-zA-Z]:", "")
+  lazy val hereDrive = {
+    val hd = here.replaceAll(":.*$", "")
+    hd match {
+    case drive if drive >= "a" && drive <= "z" =>
+      s"$drive:"
+    case _ =>
+      if (isWindows) {
+        System.err.println(s"internal error: _pwd[$_pwd], here[$here], uhere[$uhere]")
+        sys.error("hereDrive error")
+      }
+      ""
+    }
+  }
 }

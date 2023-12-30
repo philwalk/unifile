@@ -1,7 +1,8 @@
-#!/usr/bin/env -S scala -deprecation -cp target/scala-3.3.1/classes
+#!/usr/bin/env -S scala -deprecation
+package vastblue.demo
 
-import vastblue.pallet._
-import vastblue.file.ProcfsPaths._
+import vastblue.Platform.*
+import vastblue.file.ProcfsPaths.*
 
 object ProcCmdline {
   var verbose = false
@@ -10,9 +11,13 @@ object ProcCmdline {
       arg match {
       case "-v" =>
         verbose = true
+      case arg =>
+        printf("unrecognized arg [%s]\n", arg)
+        printf("usage: %s <arg1> [<arg2> ...]\n", scriptName)
+        sys.exit(1)
       }
     }
-    if (isLinux || isWinshell) {
+    if (_isLinux || _isWinshell) {
       printf("script name: %s\n\n", scriptName)
       // find /proc/[0-9]+/cmdline files
       for ((procfile, cmdline) <- cmdlines) {
@@ -22,7 +27,7 @@ object ProcCmdline {
         }
       }
     } else {
-      printf("procfs filesystem not supported in os [%s]\n", osType)
+      printf("procfs filesystem not supported in os [%s]\n", _osType)
     }
   }
 }

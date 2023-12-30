@@ -122,7 +122,7 @@ trait PathExtensions {
 
   def showLimitedStack(e: Throwable = Util.newEx): Unit = vastblue.file.Util._showLimitedStack(e)
 
-  def scriptProp(e: Exception = new Exception()): String = Script.searchStackTrace(e)
+  def scriptProp(e: Exception = new Exception()): StackTraceElement = Script.searchStackTrace(e)
 
 //  def prepArgs(args: Seq[String]) = Script.prepArgs(args)
 
@@ -130,7 +130,7 @@ trait PathExtensions {
   def scriptName: String      = Script.scriptName
   def thisProc: MainArgs.Proc = MainArgs.thisProc
 
-  def prepArgs(args: Seq[String]): Seq[String] = Platform.prepArgs(args:_*)
+  def prepArgv(args: Seq[String]): Seq[String] = MainArgs.prepArgv(args)
 
   def withFileWriter(p: Path, charset: String = "utf-8", append: Boolean = false)(func: PrintWriter => Any): Unit = {
     Util.withFileWriter(p, charset, append)(func)
@@ -157,6 +157,7 @@ trait PathExtensions {
     def toFile: JFile   = Paths.get(s).toFile
     def file: JFile     = Paths.get(s).toFile
     def posx: String    = s.replace('\\', '/')
+    def locl: String    = posx.replace('/', JFile.separatorChar)
 
     def dropSuffix: String = if (s.indexOf('.') <= 0) s else s.reverse.dropWhile(_ != '.').drop(1).reverse
   }
@@ -168,7 +169,12 @@ trait PathExtensions {
     def lcbasename: String = basename.toLowerCase
     def abspath: Path      = p.toAbsolutePath.normalize
     def abs: String        = p.toAbsolutePath.normalize.toString.posx
-    def posx: String       = abs
+    def posx: String = p.normalize.toString match {
+      case "." | "" => "."
+      case ".." => ".."
+      case s => s.posx
+    }
+    def locl: String       = p.posx.replace('/', JFile.separatorChar)
 
     def text: String              = p.contentAsString
     def pathFields                = p.iterator.asScala.toList
@@ -316,10 +322,23 @@ trait PathExtensions {
  // def localpath: String = posx.replace('/', JFile.separatorChar)
     def localpath: String = osType match {
     case "windows" =>
-      val pclean = p.normalize
-      Util.cygpath2driveletter(pclean.toString)
+      val pstr = p.toString.posx
+      val pclean = pstr.take(1) match {
+      case "/" | "." =>
+        p.normalize.toString.posx
+      case s =>
+        pstr
+      }
+      pclean match {
+      case "" =>
+        "."
+      case s if s.startsWith("/") =>
+        Util.cygpath2driveletter(pclean.posx)
+      case _ =>
+        pclean
+      }
     case _ =>
-      p.toString
+      p.toString.posx
     }
 
   
@@ -335,7 +354,7 @@ trait PathExtensions {
     }
     
     // useful for examining shebang line
-    def firstline: String = Util.readLinesAnyEncoding(p).take(1).mkString("")
+    def firstline: String = Util.readLines(p).take(1).mkString("")
     def cksumNe: Long  = Util.cksumNe(p)
     def md5: String    = Util.fileChecksum(p, algorithm = "MD5")
     def sha256: String = Util.fileChecksum(p, algorithm = "SHA-256")

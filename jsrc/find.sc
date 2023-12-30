@@ -1,12 +1,12 @@
 #!/usr/bin/env -S scala @${HOME}/.scala3cp
-//package vastblue.demo
+package vastblue.demo
 
-// shebang line error on OSX/Darwin due to non-gnu /usr/bin/env
+// hash bang line error on OSX/Darwin due to non-gnu /usr/bin/env
 // portable way to set classpath:
 // export SCALA_OPTS="@/Users/username/.scala3cp -save"
-// .scala3cp contains '-cp <path-to-pallet.jar>'
+// .scala3cp contains '-cp <path-to-unifile.jar>'
 
-import vastblue.pallet._
+import vastblue.unifile.*
 
 // partial implementation of the gnu find utility
 object Find {
@@ -59,7 +59,7 @@ object Find {
   def parseArgs(_args: Seq[String]): CmdParams = {
     val cmdParms = new CmdParams()
 
-    val argv       = prepArgs(_args) // derive C-style argv
+    val argv       = prepArgv(_args) // derive C-style argv
     val thisScript = argv.head
     var args       = argv.tail.toList
 

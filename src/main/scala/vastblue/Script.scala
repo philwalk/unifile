@@ -12,15 +12,19 @@ object Script {
   private lazy val verby: String = Option(System.getenv("SCRIPT_VERBY")).getOrElse("")
   private def verbyFlag = verby.nonEmpty
 
-  def searchStackTrace(e: Exception = new Exception()): String = {
-    def stackList: Seq[String] = e.getStackTrace.toIndexedSeq.map { _.getFileName }
-    def relevant: String   = stackList.dropWhile( (s: String) =>
-      s.contains("vastblue") ||
-      s.contains("MainArgs.scala") ||
+  def searchStackTrace(e: Exception = new Exception()): StackTraceElement = {
+    val stackList: List[StackTraceElement] = e.getStackTrace.toList
+    val relevant: StackTraceElement = stackList.dropWhile( (e: StackTraceElement) =>
+      val s = e.toString
+      s.startsWith("vastblue.") ||
       s.contains("Script.scala") ||
       s.contains("ArgsUtil.scala")
-    ).take(1).mkString
-
+    ).take(1) match {
+      case Nil =>
+        stackList.last
+      case head :: tail =>
+        head
+    }
     relevant
   }
 
@@ -37,15 +41,30 @@ object Script {
     _propOrEmpty("script.path"),
     Script.searchStackTrace(new Exception()),
   )
-  def _scriptPath: String = _propOrElse("script.path", scriptProp)
+  def stackToClassName(e: StackTraceElement): String = {
+    e.getClassName
+  }
+
+//  def stackFilePath(e: StackTraceElement): String = {
+//    e.filePath
+//  }
+  def _scriptPath: String = _propOrElse("script.path", _scriptProp.filePath)
   def scriptName: String  = _scriptPath match {
   case "" | "MainArgs.scala" | "mainargs.scala" | "Script.scala" =>
-    scriptProp.replaceAll(".*/", "")
+    scriptProp().filePath
   case name =>
     name
   }
-
-  lazy val scriptProp: String = Script.searchStackTrace(new Exception())
+  extension(e: StackTraceElement) {
+    def filePath: String = {
+      val fname = e.getFileName
+      val class2path = e.getClassName.replace('.', '/')
+      class2path.replaceFirst("[^/]*$", fname)
+    }
+  }
+  def _scriptProp: StackTraceElement = Script.searchStackTrace(new Exception())
+  def stackElementFilePath: String = _scriptProp.filePath
+  def stackElementClassName: String = _scriptProp.getClassName
 
   // TODO: this works if running from a script, but need to gracefully do something
   // otherwise.  If executing from a jar file, read manifest to get main class
@@ -59,7 +78,7 @@ object Script {
   def scriptFile = scalaScriptFile
 
   // scriptName, or legal fully qualified class name (must include package)
-  def legalMainClass(s: String): Boolean = {
+  def validScriptOrClassName(s: String): Boolean = {
     val validScript             = s.posx.matches("[./a-zA-Z_0-9$]+")
     def validMainClass: Boolean = s.posx.matches("([a-zA-Z_$][a-zA-Z_$0-9]*[.]) {1,}[a-zA-Z_$0-9]+")
     val notMgr: Boolean         = s != "dotty.tools.MainGenericRunner"

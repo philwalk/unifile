@@ -1,6 +1,7 @@
 #!/usr/bin/env -S scala -cp target/scala-3.3.1/classes
+package vastblue.demo
 
-import vastblue.pallet._
+import vastblue.unifile.*
 
 /*
  * Attempt to decode input file bytes as `utf-8`.
@@ -17,7 +18,7 @@ object Decoder {
     if (m.nonEmpty) {
       printf("%s\n", m)
     }
-    printf("usage: %s <file-path-1> [<file-2> ...]\n", sys.props("script.path"))
+    printf("usage: %s <file-path-1> [<file-2> ...]\n", scriptName)
     sys.exit(1)
   }
 

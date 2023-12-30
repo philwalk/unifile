@@ -1,14 +1,16 @@
 #!/usr/bin/env -S scala @./atFile
-package vastblue
+package vastblue.demo
 
-import vastblue.pallet._
+import vastblue.unifile.*
 
-def main(args: Array[String]): Unit = {
-  for (arg <- args) {
-    printf("arg [%s]\n", arg)
-  }
-  val argv = prepArgs(args.toSeq)
-  for ((arg, i) <- argv.zipWithIndex) {
-    printf(" %2d: [%s]\n", i, arg)
+object ShowMainArgs {
+  def main(args: Array[String]): Unit = {
+    for ((arg, i) <- args.zipWithIndex) {
+      printf("args(%2d): [%s]\n", i, arg)
+    }
+    val argv = prepArgv(args.toSeq)
+    for ((arg, i) <- argv.zipWithIndex) {
+      printf("argv(%2d): [%s]\n", i, arg)
+    }
   }
 }

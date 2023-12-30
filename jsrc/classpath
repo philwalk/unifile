@@ -1,6 +1,6 @@
 #!/usr/bin/env -S scala @./atFile
 
-import vastblue.pallet.*
+import vastblue.unifile.*
 
 lazy val (psep, cp) = {
   val ps = sys.props("path.separator")
@@ -8,7 +8,7 @@ lazy val (psep, cp) = {
   (ps, clp)
 }
 lazy val homedir = sys.props("user.home").replace('\\', '/')
-lazy val scriptName = sys.props("script.path").norm.replaceAll(".*/", "")
+lazy val scriptName = sys.props("script.path").replace('\\', '/').replaceAll(".*/", "")
 
 def usage(msg: String=""): Nothing = {
   if ( msg.nonEmpty ) {

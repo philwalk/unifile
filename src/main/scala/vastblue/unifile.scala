@@ -40,7 +40,7 @@ object unifile extends PathExtensions {
   def sameFile(s1: String, s2: String): Boolean = util.Utils.sameFile(s1, s2)
 
 //  def scriptName: String = Script.scriptName
-  def prepArgs: Array[String] => Seq[String] = Platform.prepArgs
+  def prepArgs: Array[String] => Seq[String] = Platform.prepExecArgs
 
   def driveRelative(p: Path): Boolean                             = Utils.driveRelative(p)
 

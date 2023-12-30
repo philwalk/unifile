@@ -365,10 +365,11 @@ object Util {
 
   def relativize(p: Path): Path = {
     val pnorm = nativePathString(p)
-    if (pnorm == cwdnorm) {
-      cwd
+    val cwd = cwdnorm
+    if (pnorm == cwd) {
+      Paths.get("./")
     } else if (pnorm.startsWith(cwdnorm)) {
-      cwd.relativize(p)
+      _pwd.relativize(p)
     } else {
       p
     }
@@ -376,8 +377,12 @@ object Util {
 
   def nativePathString(p: Path): String = {
     p.normalize.toString match {
-    case "" | "." => "."
-    case s        => s.replace('\\', '/')
+    case "" | "." =>
+      "."
+    case ".." =>
+      _pwd.toAbsolutePath.getParent.toString.replace('\\', '/')
+    case s =>
+      s.replace('\\', '/')
     }
   }
 

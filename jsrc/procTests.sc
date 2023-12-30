@@ -1,6 +1,7 @@
 #!/usr/bin/env -S scala -cp target/scala-3.3.1/classes
-//package vastblue
+package vastblue.demo
 
+import vastblue.unifile.*
 import vastblue.file.ProcfsPaths.*
 
 object ProcTests {
@@ -23,7 +24,7 @@ object ProcTests {
         }
       }
       for (p <- procFiles) {
-        printf("# %s\n%s\n", p.firstLine)
+        printf("# %s\n%s\n", p, p.firstline)
       }
     } else {
       printf("/proc filesystem not supported in os [%s]\n", uname)

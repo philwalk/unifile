@@ -1,10 +1,9 @@
 //#!/usr/bin/env -S scala @$HOME/.scala3cp
 package vastblue
 
-//import vastblue.Script.*
+import vastblue.Script.*
 import vastblue.Platform.*
-import vastblue.Script.legalMainClass
-//import vastblue.Script.legalMainClass
+import vastblue.Script.validScriptOrClassName
 import vastblue.Unexpand.*
 import scala.sys.process.*
 import vastblue.unifile.*
@@ -26,21 +25,22 @@ object MainArgs {
   def main(_args: Array[String]): Unit = {
     try {
       // `prepArgs` returns supplemented, preserved command line args
-      val argv = prepArgs(_args.toSeq)
-      printf("[%s]\n", argv.mkString("|"))
-      printf("[%s]\n", _args.mkString("|"))
+      val argv = prepArgv(_args.toSeq)
+      printf("argv[%s]\n", argv.mkString("|"))
+      printf("args[%s]\n", _args.mkString("|"))
     } catch {
       case e: Exception =>
         printf("%s\n", e.getMessage)
     }
   }
 
-  def prepArgs(_args: Seq[String]): Seq[String] = {
+  def prepArgv(_args: Seq[String]): Seq[String] = {
     if (_verbose) {
       printf("_args [%s]\n", _args.mkString("|"))
       // new Exception().printStackTrace()
     }
-    val argv = (Script.scriptProp :: _args.toList).toArray.toSeq
+    val e: StackTraceElement = Script._scriptProp
+    val argv = (e.filePath :: _args.toList).toArray.toSeq
     val validArgs = if (!isWindows || shell.isEmpty) {
       argv
     } else {
@@ -90,10 +90,11 @@ object MainArgs {
   }
 
   private val scriptArgz: Seq[String] = {
-    val sprop = scriptProp(new Exception)
-    val sjc = sunJavaCommand.split(" ")
+    val e: StackTraceElement = scriptProp(new Exception)
+    val sprop = e.filePath
+    val sjc: Array[String] = sunJavaCommand.split(" ")
     val argz: Array[String] = sjc.dropWhile { (s: String) =>
-      !s.endsWith(sprop) && !legalMainClass(s)
+      !s.endsWith(sprop) && !validScriptOrClassName(s)
     }
 
     if (sprop.nonEmpty) {
@@ -102,18 +103,16 @@ object MainArgs {
     argz.toIndexedSeq
   }
 
-  def shell = _envOrEmpty("SHELL")
-
   // get command line in a way that's portable
   def selfCommandline: Seq[String] = {
     val procSelfDir = "/proc/self".path
     if (procSelfDir.isDirectory) {
       val pid     = procSelfDir.realpath.name
       val cmdline = s"/proc/$pid/cmdline".path.contentAsString
-      if (verbose) eprintf("cmdline.split with zero\n")
+      if (Script.verbose) eprintf("cmdline.split with zero\n")
       cmdline.split('\u0000').toSeq
     } else {
-      prepArgs(scriptArgz.tail)
+      prepArgv(scriptArgz.tail)
     }
   }
 
@@ -207,9 +206,9 @@ object MainArgs {
       sunJavaCommand.split(" ").toSeq
     }
     val scriptArgs: Seq[String] = {
-
-      val scrpath: String       = Script.scriptProp
-      def notScriptPath         = (s: String) => !s.endsWith(scrpath) && !legalMainClass(s)
+      import vastblue.Script.*
+      val scrpath: String       = Script._scriptProp.filePath
+      def notScriptPath         = (s: String) => !s.endsWith(scrpath) && !validScriptOrClassName(s)
       val rawtail: List[String] = rawargv.dropWhile(notScriptPath(_)).toList
       (scrpath :: rawtail.drop(1)).toIndexedSeq
     }
@@ -217,7 +216,7 @@ object MainArgs {
     val argv: Seq[String] = scriptArgs.map { _.filter(_ != '"') } // remove quotes, if present
 
     // verbose toString shows quotes, to disambiguate args having spaces
-    val cmdstr = if (verbose) scriptArgs.mkString("|") else scriptArgs.mkString(" ")
+    val cmdstr = if (Script.verbose) scriptArgs.mkString("|") else scriptArgs.mkString(" ")
 
     override def toString: String = "pid: %s, argv: %s".format(pid, cmdstr)
   }

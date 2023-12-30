@@ -1,26 +1,28 @@
 #!/usr/bin/env -S scala-cli shebang
+//package vastblue.demo
 
 //> using scala "3.3.1"
-//> using lib "org.vastblue::pallet::0.10.1"
+//> using lib "org.vastblue::unifile:0.2.1"
 
-import vastblue.pallet.*
+import vastblue.unifile.*
 
-lazy val bashPath = where("bash").path
+object BashPathCli {
+  lazy val bashPath = where("bash").path
 
-def main(args: Array[String]): Unit =
-  printf("userhome: [%s]\n", userhome)
-  import scala.sys.process.*
-  val progname = if (isWindows) {
-    "where.exe"
-  } else {
-    "which"
-  }
-  val whereBash = Seq(progname, "bash").lazyLines_!.take(1).mkString
-  printf("first bash in path:\n%s\n", whereBash)
-  printf("%s\n", bashPath)
-  printf("%s\n", bashPath.realpath)
-  printf("%s\n", bashPath.toRealPath())
-  printf("posixroot: %s\n", posixroot)
-  printf("sys root:  %s\n", where("bash").norm.replaceAll("(/usr)?/bin/bash.*", ""))
-
-main(args)
+  def main(args: Array[String]): Unit =
+    printf("userhome: [%s]\n", userhome)
+    import scala.sys.process.*
+    val progname = if (isWindows) {
+      "where.exe"
+    } else {
+      "which"
+    }
+    val whereBash = Seq(progname, "bash").lazyLines_!.take(1).mkString
+    printf("first bash in path:\n%s\n", whereBash)
+    printf("%s\n", bashPath)
+    printf("%s\n", bashPath.realpath)
+    printf("%s\n", bashPath.toRealPath())
+    printf("shellRoot: %s\n", shellRoot)
+    printf("sys root:  %s\n", where("bash").posx.replaceAll("(/usr)?/bin/bash.*", ""))
+}
+BashPathCli.main(args)

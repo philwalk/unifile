@@ -1,8 +1,7 @@
 package vastblue
 
 import vastblue.unifile.*
-import vastblue.Platform._pwd
-
+import vastblue.Platform.{SCALA_HOME, _pwd, here, hereDrive}
 import org.scalatest.*
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
@@ -22,10 +21,11 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
     }
     describe("pwd") {
       it ("should be correct wrt rootDrive for os") {
+        val drivePrefix = Platform.here.take(2).mkString
         if (isWindows) {
-          assert(here.take(2).matches("[a-zA-Z]:"))
+          assert(drivePrefix.matches("[a-zA-Z]:"))
         } else {
-          assert(!here.take(2).mkString.contains(":"))
+          assert(drivePrefix.isEmpty)
         }
       }
     }
@@ -43,21 +43,4 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
       }
     }
   }
-  lazy val SCALA_HOME = Option(System.getenv("SCALA_HOME")).getOrElse("") // might be empty
-  lazy val here  = _pwd.toAbsolutePath.normalize.toString.toLowerCase.replace('\\', '/')
-  lazy val uhere = here.replaceFirst("^[a-zA-Z]:", "")
-  lazy val hereDrive = {
-    val hd = here.replaceAll(":.*$", "")
-    hd match {
-    case drive if drive >= "a" && drive <= "z" =>
-      s"$drive:"
-    case _ =>
-      if (isWindows) {
-        System.err.println(s"internal error: _pwd[$_pwd], here[$here], uhere[$uhere]")
-        sys.error("hereDrive error")
-      }
-      ""
-    }
-  }
-
 }
