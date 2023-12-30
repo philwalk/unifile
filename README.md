@@ -1,4 +1,8 @@
 # unifile
+
++ Expressive, Platform-portable scala library.
++ Simplify system administration tasks.
+
 JVM support for creating `java.nio.file.Path` objects from files from Cygwin / Msys / Gitbash file paths.
 Transparently works everywhere; added support for Windows, other environments still work as before.
 
