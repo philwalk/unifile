@@ -6,7 +6,7 @@
 JVM support for creating `java.nio.file.Path` objects from files from Cygwin / Msys / Gitbash file paths.
 Transparently works everywhere; added support for Windows, other environments still work as before.
 
-<img alt="unifile image" width=200 src="images/wooden-unifile.png">
+<img alt="unifile image" width=200 src="images/plastic-pallet.png">
 
 Work with Posix paths in Windows, recognized mount points in `/etc/fstab`.
 
