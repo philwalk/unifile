@@ -27,7 +27,7 @@ Work with Posix paths in Windows, recognized mount points in `/etc/fstab`.
 
 To use `unifile` in an `SBT` project, add this dependency to `build.sbt`
 ```sbt
-  "org.vastblue" % "unifile" % "0.10.1"
+  "org.vastblue" % "unifile" % "0.2.2"
 ```
 For `scala` or `scala-cli` scripts, see examples below.
 
@@ -66,7 +66,7 @@ This example might surprise developers working in a `Windows` posix shell, since
 #!/ usr / bin / env -S scala -cli shebang
 
 //> using scala "3.3.1"
-//> using lib "org.vastblue::unifile::0.10.1"
+//> using lib "org.vastblue::unifile::0.2.2"
 
 import vastblue.unifile.Paths
 
