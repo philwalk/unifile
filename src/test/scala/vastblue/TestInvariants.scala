@@ -11,6 +11,9 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
   describe ("invariants") {
     // verify test invariants
     describe ("working drive") {
+      val hd = Platform.hereDrive
+      val workingDrive: String = Platform.workingDrive.string
+      assert(hd equalsIgnoreCase workingDrive)
       it (" should be correct for os") {
         if (isWindows) {
           assert(hereDrive.matches("[a-zA-Z]:"))
@@ -21,11 +24,13 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
     }
     describe("pwd") {
       it ("should be correct wrt rootDrive for os") {
-        val drivePrefix = Platform.here.take(2).mkString
+        val workingDrive: String = Platform.workingDrive.string
         if (isWindows) {
-          assert(drivePrefix.matches("[a-zA-Z]:"))
+          val currentWorkingDrive = Platform.here.take(2).mkString
+          assert(currentWorkingDrive.matches("[a-zA-Z]:"))
+          assert(workingDrive.equalsIgnoreCase(currentWorkingDrive))
         } else {
-          assert(drivePrefix.isEmpty)
+          assert(workingDrive.isEmpty)
         }
       }
     }
