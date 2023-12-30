@@ -45,11 +45,13 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
     }
     describe("pwd") {
       it ("should be correct wrt rootDrive for os") {
-        val currentWorkingDrive = Platform.here.take(2).mkString
+        val workingDrive: String = Platform.workingDrive.string
         if (isWindows) {
+          val currentWorkingDrive = Platform.here.take(2).mkString
           assert(currentWorkingDrive.matches("[a-zA-Z]:"))
+          assert(workingDrive.equalsIgnoreCase(currentWorkingDrive))
         } else {
-          assert(currentWorkingDrive.isEmpty)
+          assert(workingDrive.isEmpty)
         }
       }
     }

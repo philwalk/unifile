@@ -105,13 +105,15 @@ scalacOptions := {
 scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
 case Some((2, n)) if n >= 13 =>
   Seq(
+    "-Ytasty-reader",
     "-Xsource:3",
     "-Xmaxerrs",
     "10",
     "-Yscala3-implicit-resolution",
     "-language:implicitConversions",
   )
-case _ => Nil
+case _ =>
+  Nil
 })
 
 // key identifier, otherwise this field is ignored; passwords supplied by pinentry
