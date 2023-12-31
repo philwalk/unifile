@@ -193,12 +193,14 @@ object Utils  {
   }
 
   def scala3Version = {
-    val sh = scalaHome
-    val versionFile = Paths.get(s"$sh/VERSION")
+    val scalaHomePath = scalaHome.path.realpath.abs
+    val versionFilename = s"$scalaHomePath/VERSION"
+    val versionFile = Paths.get(versionFilename)
     if (versionFile.toFile.exists) {
       scala.io.Source.fromFile(versionFile.toFile).getLines().take(1).mkString.replaceFirst("version:=","")
     } else {
-      ""
+      val sversion = scalaHomePath.replaceAll(".*/", "").trim
+      sversion
     }
   }
 

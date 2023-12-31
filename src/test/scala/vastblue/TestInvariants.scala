@@ -7,7 +7,7 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
 // PathExtensions
-class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
+class TestInvariants extends AnyFunSpec with Matchers with BeforeAndAfter {
   describe ("invariants") {
     // verify test invariants
     describe ("working drive") {
