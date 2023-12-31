@@ -9,16 +9,8 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
 class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
-  val verbose   = Option(System.getenv("VERBOSE_TESTS")).nonEmpty
+  lazy val verbose   = Option(System.getenv("VERBOSE_TESTS")).nonEmpty
   var hook: Int = 0
-
-  // cygroot describes how to translate `driveRelative` like this:
-  //     /cygdrive/c          # if cygroot == '/cygdrive'
-  //     /c                   # if cygroot == '/'
-  val cygroot: String = cygdrive match {
-  case str if str.endsWith("/") => str
-  case str                      => s"$str/"
-  }
 
   before {
     withFileWriter(testFile) { w =>
@@ -251,8 +243,7 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
 
   describe("Path") {
     describe("# round trip consistency") {
-      val testPwd = java.nio.file.Paths.get(".").toAbsolutePath.normalize.toString
-      for (fname <- distinctPairs) {
+      for (fname <- distinctKeys) {
         val f1: Path            = Paths.get(fname)
         val variants: Seq[Path] = getVariants(f1).distinct
         assert(f1.posx.nonEmpty)
@@ -262,7 +253,6 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
           it(s"round trip conversion should match [$matchtag]") {
             // val (k1, k2) = (f1.key, v.key)
             val sameFile = isSameFile(f1, v)
-            def isPwd(p: Path) = p.toString == "." || p.toString == testPwd
             val bothPwd = isPwd(f1) && isPwd(v)
             if (f1 != v || !sameFile) {
               printf("f1[%s]\nv[%s]\n", f1, v)
@@ -350,6 +340,14 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
   lazy val gdrive = Paths.get("g:/")
   lazy val fdrive = Paths.get("f:/")
 
+  // cygroot describes how to translate `driveRelative` like this:
+  //     /cygdrive/c          # if cygroot == '/cygdrive'
+  //     /c                   # if cygroot == '/'
+  lazy val cygroot: String = cygdrive match {
+  case str if str.endsWith("/") => str
+  case str                      => s"$str/"
+  }
+
   lazy val gdriveTests = List(
     (s"${cygroot}g", "g:\\"),
     (s"${cygroot}g/", "g:\\")
@@ -412,7 +410,7 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
       "/tmp"
     }
   }
-  lazy val distinctPairs: Seq[String] = {
+  lazy val distinctKeys: Seq[String] = {
     val pairs: Seq[String] = (toStringPairs.toMap.keySet ++ pathDospathPairs.toMap.keySet).toList.distinct.sorted
     for (pair <- pairs) {
       printf("pair: [%s]\n", pair)
@@ -420,6 +418,16 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
     pairs
   }
 
+  lazy val testPwd = java.nio.file.Paths.get(".").toAbsolutePath.normalize.toString
+
+  def isPwd(p: Path): Boolean = isPwd(p.toString)
+
+  def isPwd(s: String): Boolean = s match {
+    case "" | "." =>
+      true
+    case s =>
+      s == testPwd
+  }
 
   /** similar to gnu 'touch <filename>' */
   def touch(p: Path): Int = {
