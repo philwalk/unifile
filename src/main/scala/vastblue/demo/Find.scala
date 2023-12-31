@@ -4,7 +4,7 @@ package vastblue.demo
 // hash bang line error on OSX/Darwin due to non-gnu /usr/bin/env
 // portable way to set classpath:
 // export SCALA_OPTS="@/Users/username/.scala3cp -save"
-// .scala3cp contains '-cp <path-to-unifile.jar>'
+// .scala3cp contains '-cp <path-to-thislib.jar>'
 
 import vastblue.unifile.*
 
@@ -18,7 +18,7 @@ object Find {
         for (f <- walkTree(dir.toFile, maxdepth = parms.maxdepth)) {
           val p = f.toPath
           if (parms.matches(p)) {
-            printf("%s\n", p.relpath.posixpath)
+            printf("%s\n", p.relpath.posx)
           }
         }
       }
@@ -51,7 +51,7 @@ object Find {
   }
 
   /**
-   * prepArgs returns `argv`, equivalent to C language main arguments vector.
+   * prepArgv returns `argv`, equivalent to C language main arguments vector.
    * jvm main#args and `argv.tail` identical if no `glob` args are passed.
    * `argv` always delivers unexpanded glob arguments, unlike main#args.
    */
