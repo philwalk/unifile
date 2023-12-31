@@ -93,8 +93,11 @@ object MainArgs {
     val e: StackTraceElement = scriptProp(new Exception)
     val sprop = e.filePath
     val sjc: Array[String] = sunJavaCommand.split(" ")
-    val argz: Array[String] = sjc.dropWhile { (s: String) =>
-      !s.endsWith(sprop) && !validScriptOrClassName(s)
+    val argz: Array[String] = {
+      val list = sjc.dropWhile { (s: String) =>
+        !s.endsWith(sprop) && !validScriptOrClassName(s)
+      }
+      Array.ofDim[String](list.size+1)
     }
 
     if (sprop.nonEmpty) {

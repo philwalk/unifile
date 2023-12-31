@@ -9,7 +9,7 @@ javacOptions ++= Seq("-source", "11", "-target", "11")
 
 //ThisBuild / envFileName   := "dev.env" // sbt-dotenv plugin gets build environment here
 ThisBuild / scalaVersion  := scalaVer
-ThisBuild / version       := "0.2.2"
+ThisBuild / version       := "0.2.3-SNAPSHOT"
 ThisBuild / versionScheme := Some("semver-spec")
 
 ThisBuild / organization         := "org.vastblue"

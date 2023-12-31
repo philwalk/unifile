@@ -2,7 +2,6 @@ package vastblue.file
 
 import vastblue.Platform.*
 import vastblue.unifile.posx
-//import vastblue.Script.posx
 
 import java.io.File as JFile
 import java.nio.file.Path as JPath
