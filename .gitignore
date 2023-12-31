@@ -2,6 +2,7 @@
 *.jar
 *.class
 *.log
+*.out
 sall
 jsall
 s[0-9]*

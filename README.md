@@ -33,15 +33,16 @@ For `scala` or `scala-cli` scripts, see examples below.
 
 ## TL;DR
 Simplicity and Universal Portability:
-* Script as though you're running in on Linux environment.
+* Script as though you're running in a Linux environment.
 * extends the range of scala scripting:
 * read process command lines from `/proc/$PID/cmdline` files
 ## Requirements
-Requires a Windows posix shell:
+In Windows, requires a posix shell:
   ([MSYS64](https://msys2.org), [CYGWIN64](https://www.cygwin.com), or `WSL`)
 
-Best with a recent version of coreutils:
+Example code below assumes you have a recent version of coreutils:
   (e.g., `ubuntu`: 8.32-4.1ubuntu1, `osx`: stable 9.4)
+This allows you to use `#!/usr/bin/env -S scala` in script hash-bang lines.
 
 ### Concept
   * import `vastblue.file.Paths` instead of `java.nio.file.Paths`
