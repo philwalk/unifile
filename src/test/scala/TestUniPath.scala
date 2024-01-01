@@ -1,6 +1,6 @@
 package vastblue
 
-import vastblue.MountMapper.*
+import vastblue.file.MountMapper.*
 import vastblue.file.Paths
 import vastblue.file.Paths.*
 import vastblue.Platform.*

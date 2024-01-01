@@ -15,8 +15,9 @@ import scala.sys.process.*
 import scala.collection.mutable.Map as MutMap
 import scala.jdk.CollectionConverters.*
 
-import vastblue.DriveRoot.*
-import vastblue.MountMapper.{mountMap, reverseMountMap}
+import vastblue.file.DriveRoot
+import vastblue.file.DriveRoot.*
+import vastblue.file.MountMapper
 import vastblue.file.Paths
 import vastblue.util.PathExtensions.*
 
@@ -868,7 +869,7 @@ object Platform {
 
   def cygpathM(pathstr: String): String = {
     val normed = pathstr.replace('\\', '/')
-    val tupes: Option[(String, String)] = reverseMountMap.find { case (k, v) =>
+    val tupes: Option[(String, String)] = MountMapper.reverseMountMap.find { case (k, v) =>
       val normtail = normed.drop(k.length)
       // detect whether a fstab prefix is an exactly match of a normed path string.
       normed.startsWith(k) && (normtail.isEmpty || normtail.startsWith("/"))
@@ -969,7 +970,7 @@ object Platform {
   def getPath(dir: String, s: String = ""): Path = Paths.get(s"$dir/$s")
 
   lazy val driveLetters: List[DriveRoot] = {
-    val values = mountMap.values.toList
+    val values = MountMapper.mountMap.values.toList
     val letters = {
       for {
         dl <- values.map { _.take(2) }
@@ -1132,7 +1133,7 @@ object Platform {
     (localMountMap, cd2r)
   }
 
-  lazy val cygdrivePrefix = reverseMountMap.get("cygdrive").getOrElse("")
+  lazy val cygdrivePrefix = MountMapper.reverseMountMap.get("cygdrive").getOrElse("")
 
   def fileLines(f: JFile): Seq[String] = {
     Using.resource(new BufferedReader(new FileReader(f))) { reader =>
@@ -1153,7 +1154,7 @@ object Platform {
 
   // this may be needed to replace `def canExist` in vastblue.os
   lazy val driveLettersLc: List[String] = {
-    val values = mountMap.values.toList
+    val values = MountMapper.mountMap.values.toList
     val letters = {
       for {
         dl <- values.map { _.take(2) }

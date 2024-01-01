@@ -36,7 +36,7 @@ object Utils  {
     str
   }
 
-  lazy val herepath: Path = normPath(sys.props("user.dir"))
+  lazy val herepath: Path = JPaths.get(sys.props("user.dir"))
   def here = herepath.toString.replace('\\', '/')
 
   def driveAndPath(filepath: String) = {
@@ -126,27 +126,6 @@ object Utils  {
       val p1  = Paths.get(dir, "A")
       val p2  = Paths.get(dir, "a")
       p1.toAbsolutePath != p2.toAbsolutePath
-    }
-  }
-
-  def normPath(_pathstr: String): Path = {
-    val jpath: Path = _pathstr match {
-    case "~" => JPaths.get(sys.props("user.dir"))
-    case _   => JPaths.get(_pathstr)
-    }
-    normPath(jpath)
-  }
-  def normPath(path: Path): Path = {
-    try {
-      val s = path.toString
-      if (s.length == 2 && s.take(2).endsWith(":")) {
-        _pwd
-      } else {
-        path.toAbsolutePath.normalize
-      }
-    } catch {
-      case e: java.io.IOError =>
-        path
     }
   }
 

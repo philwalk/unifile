@@ -16,9 +16,13 @@ object Script {
     val stackList: List[StackTraceElement] = e.getStackTrace.toList
     val relevant: StackTraceElement = stackList.dropWhile( (e: StackTraceElement) =>
       val s = e.toString
-      s.startsWith("vastblue.") ||
-      s.contains("Script.scala") ||
-      s.contains("ArgsUtil.scala")
+      s.contains("unifile.") ||
+      s.contains("vastblue.Script.scala") ||
+      s.contains("vastblue.ArgsUtil.scala") ||
+      s.contains("vastblue.MainArgs") ||
+      s.contains("vastblue.util.") ||
+      s.contains("scalatest") ||
+      s.contains("junit")
     ).take(1) match {
       case Nil =>
         stackList.last

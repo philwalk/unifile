@@ -1,11 +1,9 @@
-package vastblue
+package vastblue.file
 
-import vastblue.DriveRoot.*
 import vastblue.Platform.{_execLines, _notWindows, _pwd, _shellRoot, cygpathExe, posixrootBare, workingDrive}
+import vastblue.file.DriveRoot.*
 import vastblue.file.Util.readLines
 import vastblue.util.Utils.isAlpha
-//import vastblue.Platform.*
-//import vastblue.file.Paths.canExist
 import vastblue.util.PathExtensions.*
 import java.io.{File => JFile}
 import java.nio.file.Path
@@ -182,72 +180,6 @@ object MountMapper {
     }
     // replace multiple slashes with single slash
     cygMstr.replaceAll("//+", "/")
-  }
-
-//  lazy val DriveLetterColonPattern = "([a-zA-Z]):(.*)?".r
-//  lazy val CygdrivePattern         = s"${_cygdrive}([a-zA-Z])(/.*)?".r
-
-//  def pathsGetPrev(psxStr: String): Path = {
-//    val _normpath = psxStr.replace('\\', '/')
-//    val normpath = _normpath.take(_cygdrive.length+1) match {
-//    case dl if dl.startsWith("/") =>
-//      // apply mount map to paths with leading slash
-//      applyPosix2LocalMount(_normpath) // becomes absolute, if mounted
-//    case _ =>
-//      _normpath
-//    }
-//    def dd = driveRoot.toUpperCase.take(1)
-//    val (literalDrive, impliedDrive, pathtail) = normpath match {
-//    case DriveLetterColonPattern(dl, tail) => // windows drive letter
-//      (dl, dl, tail)
-//    case CygdrivePattern(dl, tail) => // cygpath drive letter
-//      (dl, dl, tail)
-//    case pstr if pstr.matches("/proc(/.*)?") => // /proc file system
-//      ("", "", pstr) // must not specify a drive letter!
-//    case pstr if pstr.startsWith("/") => // drive-relative path, with no drive letter
-//      // drive-relative paths are on the current-working-drive,
-//      ("", dd, pstr)
-//    case pstr => // relative path, implies default drive
-//      (dd, "", pstr)
-//    }
-//    val semipath          = Option(pathtail).getOrElse("/")
-//    val neededDriveLetter = if (impliedDrive.nonEmpty) s"$impliedDrive:" else ""
-//    val fpstr             = s"${neededDriveLetter}$semipath" // derefTilde(psxStr)
-//    if (literalDrive.nonEmpty) {
-//      // no need for cygpath if drive is unambiguous.
-//      val fpath =
-//        if (fpstr.endsWith(":") && fpstr.take(3).length == 2 && fpstr.equalsIgnoreCase(driveRoot)) {
-//          // fpstr is a drive letter expression.
-//          // Windows interprets a bare drive letter expression as
-//          // the "working directory" each drive had at jvm startup.
-//          _pwd
-//        } else {
-//          JPaths.get(fpstr)
-//        }
-//      normPath(fpath)
-//    } else {
-//      JPaths.get(fpstr)
-//    }
-//  }
-
-  def normPath(_pathstr: String): Path = {
-    val jpath: Path = _pathstr match {
-    case "~" => JPaths.get(sys.props("user.dir"))
-    case _   => JPaths.get(_pathstr)
-    }
-    normPath(jpath)
-  }
-
-  def normPath(path: Path): Path = try {
-    val s = path.toString
-    if (s.length == 2 && s.take(2).endsWith(":")) {
-      _pwd
-    } else {
-      path.toAbsolutePath.normalize
-    }
-  } catch {
-    case e: java.io.IOError =>
-      path
   }
 
   /*

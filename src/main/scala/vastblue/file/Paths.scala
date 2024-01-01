@@ -1,10 +1,9 @@
 package vastblue.file
 
-import vastblue.MountMapper.cygdrive
+import vastblue.file.MountMapper.cygdrive
 import vastblue.Platform
 import vastblue.Platform.{envPath, exeSuffix, shellDrive}
 import vastblue.file.Util.notWindows
-//import vastblue.Platform.*
 import vastblue.file.ProcfsPaths.*
 import vastblue.util.PathExtensions.*
 

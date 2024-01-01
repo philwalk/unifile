@@ -1,8 +1,9 @@
 package vastblue.file
 
 import vastblue.Platform.*
-import vastblue.{DriveRoot, Platform, Script}
-import vastblue.DriveRoot.*
+import vastblue.{Platform, Script}
+import vastblue.file.DriveRoot
+import vastblue.file.DriveRoot.*
 import vastblue.file.Util.*
 import vastblue.util.Utils.*
 import vastblue.math.Cksum

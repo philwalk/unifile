@@ -18,7 +18,7 @@ object Find {
         for (f <- walkTree(dir.toFile, maxdepth = parms.maxdepth)) {
           val p = f.toPath
           if (parms.matches(p)) {
-            printf("%s\n", p.relpath.posx)
+            printf("%s\n", p.relpath.stdpath)
           }
         }
       }
