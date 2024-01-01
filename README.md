@@ -2,9 +2,12 @@
 
 + Expressive, Platform-portable scala library.
 + Simplify system administration tasks.
++ no 3rd party libraries, 100% scala.
 
-JVM support for creating `java.nio.file.Path` objects from files from Cygwin / Msys / Gitbash file paths.
-Transparently works everywhere; added support for Windows, other environments still work as before.
+For this functionality, plus reading of `.csv`, expressive Date & Time functions, and more, see [Pallet](https://github.com/philwalk/pallet) instead (has 3rd party dependencies).
+
+Write one version of code to run in Linux, Mac, or Windows posix shell environments.
+JVM support for `java.nio.file.Path` objects that work everywhere.
 
 <img alt="unifile image" width=200 src="images/plastic-pallet.png">
 
