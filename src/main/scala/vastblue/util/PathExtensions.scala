@@ -249,7 +249,6 @@ trait PathExtensions {
     }
 
     def stdpath: String    = Platform.standardizePath(p.toAbsolutePath.normalize.toString.replace('\\', '/'))
-    def posixpath: String  = stdpath
     def dospath: String    = localpath.replace('/', '\\')
 
     def relpath: Path        = Util.relativize(p) // Platform?
@@ -425,7 +424,6 @@ trait PathExtensions {
 
     def relpath: Path             = f.toPath.relpath
     def stdpath: String           = Platform.standardizePath(f.toPath.toAbsolutePath.normalize.posx)
-    def posixpath: String         = f.toPath.stdpath
     def lastModifiedYMD: String   = f.path.lastModifiedYMD
     def parentPath: Path          = f.parentFile.toPath
     def parent: Path              = parentPath

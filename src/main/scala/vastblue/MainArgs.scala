@@ -93,15 +93,17 @@ object MainArgs {
     val e: StackTraceElement = scriptProp(new Exception)
     val sprop = e.filePath
     val sjc: Array[String] = sunJavaCommand.split(" ")
-    val argz: Array[String] = {
+    var argz: Array[String] = {
       val list = sjc.dropWhile { (s: String) =>
         !s.endsWith(sprop) && !validScriptOrClassName(s)
       }
-      Array.ofDim[String](list.size+1)
+      (sprop :: list.toList).toArray
     }
-
+    require(argz.nonEmpty)
     if (sprop.nonEmpty) {
       argz(0) = sprop
+    } else {
+      argz(0) = "unknown-main"
     }
     argz.toIndexedSeq
   }

@@ -12,8 +12,10 @@ class MainSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
     it ("should tolerate empty main.args") {
       val emptyArgs  = Array.ofDim[String](0)
       val argv       = prepArgv(emptyArgs.toSeq)
-      val thisScript = argv.head
-      var args       = argv.tail.toList
+      val main       = argv.headOption
+      printf("main: [%s]\n", main)
+      printf("argv: [%s]\n", argv)
+      assert(argv.size == 1) // argv(0) should reference main
     }
   }
 }

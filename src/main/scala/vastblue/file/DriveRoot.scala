@@ -1,4 +1,4 @@
-package vastblue
+package vastblue.file
 
 import java.nio.file.{Path, Paths => JPaths}
 import vastblue.Platform.cygdrive

@@ -2,7 +2,7 @@
 package vastblue.demo
 
 import vastblue.unifile.*
-import vastblue.MountMapper.*
+import vastblue.file.MountMapper.*
 
 object ShowMountMap {
   def main(args: Array[String]): Unit = {

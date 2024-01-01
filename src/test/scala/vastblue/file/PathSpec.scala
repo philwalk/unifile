@@ -62,7 +62,7 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
     }
   }
 
-  describe("Path.relpath.posixpath") {
+  describe("Path.relpath.stdpath") {
     it("should correctly relativize Path, if below `pwd`") {
       val p     = Paths.get(s"${_pwd.posx}/src")
       val pabs: String = p.toAbsolutePath.normalize.toString.replace('\\', '/')
@@ -157,8 +157,8 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
           // val b = file.toString.toLowerCase
           // val c = file.localpath.toLowerCase
           val d: String = file.dospath.toLowerCase
-          val df       = normPath(d)
-          val af       = normPath(a)
+          val df       = Paths.get(a)
+          val af       = Paths.get(d)
           val sameFile = isSameFile(af, df)
           def isPwd(s: String): Boolean = s == "." || s == pwdposx
           val equivalent = a == d || a.path.abs == d.path.abs
@@ -298,7 +298,7 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
 
   def getVariants(p: Path): Seq[Path] = {
     val pstr = p.toString.toLowerCase
-    import vastblue.DriveRoot._
+    import vastblue.file.DriveRoot.*
     val stdpathToo = if (nonCanonicalDefaultDrive) Nil else Seq(p.stdpath)
 
     val variants: Seq[String] = Seq(
@@ -397,7 +397,7 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
   lazy val TMP: String = {
     val driveLetter = "g"
     val driveRoot   = s"${cygroot}${driveLetter}"
-    if (vastblue.Platform.canExist(driveRoot.path)) {
+    if (canExist(driveRoot.path)) {
       val tmpdir = Paths.get(driveRoot)
       // val str = tmpdir.localpath
       tmpdir.isDirectory && tmpdir.paths.contains("/tmp") match {
