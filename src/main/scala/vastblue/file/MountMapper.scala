@@ -170,7 +170,7 @@ object MountMapper {
         val dl: String = normed.drop(1).take(1) + ":"
         normed.drop(2) match {
         case "" =>
-          s"$dl/" // trailing slash is required here
+          s"$dl/" // trailing slash is needed here
         case str =>
           s"$dl$str"
         }
@@ -187,7 +187,7 @@ object MountMapper {
    * else by adding shellRoot prefix (if `driveRelative`)
    */
   def applyPosix2LocalMount(pathstr: String): String = {
-    require(pathstr.take(2).last != ':', s"bad argument : ${pathstr}")
+    require(!pathstr.take(2).endsWith(":"), s"bad argument : ${pathstr}")
     if (pathstr == "/etc/fstab") {
       hook += 1
     }
