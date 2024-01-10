@@ -67,7 +67,7 @@ class PathnameTest extends AnyFunSpec with Matchers with BeforeAndAfter with Pat
     for (testfilename <- testfilenames) {
       it(s"should correctly handle filename [$testfilename] ") {
         val testfile = Paths.get(testfilename)
-        val testPossible = testfile.parentFile match {
+        val testPossible = testfile.parent match {
         case dir if dir.isDirectory =>
           true
         case _ =>

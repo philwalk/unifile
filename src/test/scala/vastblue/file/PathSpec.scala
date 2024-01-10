@@ -242,6 +242,46 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
   }
 
   describe("Path") {
+    describe("# bare filename") {
+      it ("bare path segments are valid files") {
+        val s1 = Paths.get("s1")
+        val stdpath = s1.stdpath
+        assert(stdpath.startsWith("/"))
+      }
+      it ("bare filenames always have parent files") {
+        val s1 = Paths.get("s1")
+        val p1: Path = s1.getParentPath
+        val par = s1.toAbsolutePath.parent
+        assert(par != null)
+      }
+    }
+    describe("# getParentPath extension method") {
+      val windowsPaths: List[String] = if (isWindows) {
+        List(
+          "C:",
+          "C:/",
+        )
+      } else {
+        Nil
+      }
+      val testPaths: List[String] = windowsPaths
+      ::: List(
+        ".",
+        "src",
+        "/",
+        "/bin",
+      )
+
+      for (pathstr <- testPaths.distinct) {
+        it(s"does not return null on $pathstr") {
+          val p = Paths.get(pathstr)
+          val par = p.getParentPath
+          eprintf("par [%s]\n", par.posx)
+          assert(par != null)
+        }
+      }
+    }
+
     describe("# round trip consistency") {
       for (fname <- distinctKeys) {
         val f1: Path            = Paths.get(fname)
