@@ -254,12 +254,23 @@ trait PathExtensions {
     def relpath: Path        = Util.relativize(p) // Platform?
     def relativePath: String = relpath.toString.posx
    
-    // TODO: this is a jumble of overrides
-    def getParent: String    = p.toFile.getParent // overrides java.nio.file.Path.getName, with different return type!
-    def getParentFile: JFile = p.toFile.getParentFile
-    def parentFile: JFile    = getParentFile
-    def parentPath: Path     = parentFile.toPath // could use Path#getParent, but for override above
-    def parent: Path         = parentPath
+    // none of these extension methods are overrides of JFile or Path
+    // null is never a return value
+    def parentPath: Path    = getParentPath
+    def parent: Path        = getParentPath
+    def parentFile: JFile   = getParentPath.toFile
+    def getParentPath: Path = {
+      val abs = p.toAbsolutePath
+      val norm = abs.normalize
+      norm.getParent match {
+        case null =>
+          Paths.get("/") // never return null
+        case par =>
+          par
+      }
+    }
+    // avoid overriding JFile.getParent() or JFile.getParentFile()
+    // or java.nio.file.Path.getParent()
 
     def noDrive: String      = p.posx match {
     case s if s.take(2).endsWith(":") => s.drop(2)
@@ -392,8 +403,15 @@ trait PathExtensions {
     def suffix: String          = dotsuffix.dropWhile((c: Char) => c == '.')
     def lcsuffix: String        = suffix.toLowerCase
 
-    def getParent: String = f.getParent
-    def parentFile: JFile = f.getParentFile
+    // none of these extension methods are overrides of JFile or Path
+    // null is never a return value
+    def getParentPath: Path = f.toPath.getParentPath
+    def parentPath: Path    = f.toPath.getParentPath
+    def parent: Path        = f.parentPath
+    def parentFile: JFile   = f.getParentPath.toFile
+    // avoid overriding JFile.getParent() or JFile.getParentFile()
+    // or java.nio.file.Path.getParent()
+
     def byteArray: Array[Byte] = JFiles.readAllBytes(f.toPath)
     def files: Seq[JFile] = if (f.isDirectory) f.listFiles.toSeq else Nil
     def paths: Seq[Path] = f.listFiles.toSeq.map { _.toPath }
@@ -425,8 +443,6 @@ trait PathExtensions {
     def relpath: Path             = f.toPath.relpath
     def stdpath: String           = Platform.standardizePath(f.toPath.toAbsolutePath.normalize.posx)
     def lastModifiedYMD: String   = f.path.lastModifiedYMD
-    def parentPath: Path          = f.parentFile.toPath
-    def parent: Path              = parentPath
 
     def ls: Seq[JFile] = f match {
     case f if f.isDirectory => f.listFiles.toSeq

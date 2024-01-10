@@ -2,7 +2,7 @@ package vastblue.file
 
 import vastblue.file.MountMapper.cygdrive
 import vastblue.Platform
-import vastblue.Platform.{envPath, exeSuffix, shellDrive}
+import vastblue.Platform.{envPath, exeSuffix, shellDrive, legalPosixFilename }
 import vastblue.file.Util.notWindows
 import vastblue.file.ProcfsPaths.*
 import vastblue.util.PathExtensions.*
@@ -79,6 +79,7 @@ object Paths {
     val _pathstr = derefTilde(_fnamestr) // replace leading tilde with sys.props("user.home")
 
     val psxStr = _pathstr.replace('\\', '/')
+    //require(legalPosixFilename(psxStr), s"filename not legal: [$_pathstr]")
 
     val p: Path = {
       if (psxStr.startsWith(s"$pwdposx/")) {

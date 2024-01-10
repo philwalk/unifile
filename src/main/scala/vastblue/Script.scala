@@ -55,9 +55,9 @@ object Script {
   def _scriptPath: String = _propOrElse("script.path", _scriptProp.filePath)
   def scriptName: String  = _scriptPath match {
   case "" | "MainArgs.scala" | "mainargs.scala" | "Script.scala" =>
-    scriptProp().filePath
+    scriptProp().filePath.posx
   case name =>
-    name
+    name.posx
   }
   extension(e: StackTraceElement) {
     def filePath: String = {

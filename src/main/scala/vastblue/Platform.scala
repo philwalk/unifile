@@ -125,6 +125,36 @@ object Platform {
   def _userHome = sys.props("user.home")
   def BadPath(psxStr: String) = JPaths.get(s"BadPath-$psxStr")
   def isAlpha(c: Char): Boolean = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+  def isAlphaNum(c: Char): Boolean = isAlpha(c) || isNumeric(c)
+  def isNumeric(c: Char): Boolean = c >= '0' && c <= '9'
+  def isLegalVarName(s: String): Boolean = {
+    s.matches("[a-zA-Z_$][a-zA-Z_0-9$]*")
+  }
+
+  // other constraints exist, especially in Windows, but these characters are not
+  // portable, and are not valid one or all of Windows, Linux or Mac.  Note that this
+  // limitation applies only to file path Path segments.
+  lazy val illegalFilenameBytes: Seq[Byte] = {
+    Seq('\u0000', '\\', '/', ':', '*', '?', '"', '<', '>', '|').map { _.toByte }.distinct
+  }
+
+  def legalFilenameSegment(nameseg: String): Boolean = {
+    var bytes = nameseg.getBytes
+    if (isWindows && bytes.take(2).contains(':')) {
+      bytes = bytes.drop(2) // remove drive letter (not legal :)
+    }
+    bytes.forall { (b: Byte) =>
+      !illegalFilenameBytes.contains(b)
+    }
+  }
+  def legalFilename(name: String): Boolean = {
+    legalPosixFilename(name.replace('\\', '/'))
+  }
+  def legalPosixFilename(name: String): Boolean = {
+    name.split("/").forall {
+      legalFilenameSegment(_)
+    }
+  }
   def scriptName: String = Script.scriptName
   def scriptPath: Path   = Script.scriptPath
 
@@ -766,14 +796,14 @@ object Platform {
     case s =>
       s
     }
-    val first3 = psxStr.take(3)
+    val first3 = psxStr.take(3).toSeq
     if (platVerby) {
       eprintf("windowsPathType: str[%s]\n", str)
       eprintf("windowsPathType: psx[%s]\n", psxStr)
       eprintf("windowsPathType: first3[%s]\n", first3)
     }
 
-    first3.toSeq match {
+    first3 match {
     case Seq('/') =>
       PathPsx(psxStr, JPaths.get(_shellRoot))
 
@@ -808,7 +838,7 @@ object Platform {
     case Seq(a, _, _) if isAlpha(a) =>
       PathRel(psxStr, JPaths.get(psxStr))
 
-    case Seq(a, b) if isAlpha(a) && isAlpha(b) =>
+    case _ =>
       PathRel(psxStr, JPaths.get(psxStr))
     }
   }
@@ -824,7 +854,8 @@ object Platform {
     if (!_isWindows) {
       JPaths.get(psxStr)
     } else {
-      windowsPathType(psxStr) match {
+      val wpt = windowsPathType(psxStr)
+      wpt match {
       case pt: PathAbs =>
         pt.p
       case pt: PathDrv =>
@@ -835,6 +866,7 @@ object Platform {
       case pt: PathBad =>
         BadPath(psxStr)
       case pt: PathPsx =>
+
         pt.p
       }
     }
@@ -1180,14 +1212,14 @@ object Platform {
   def _scalaPath: Path  = _pathCache("scala")
   lazy val SCALA_HOME = {
     val sp = _scalaPath
-    val _scalaHome: String = sp.getParentFile.posx.replaceFirst("/bin$", "")
+    val _scalaHome: String = sp.getParent.posx.replaceFirst("/bin$", "")
     val sh = System.getenv("SCALA_HOME")
     Option(sh).getOrElse(_scalaHome)
   }
 
   def _javaPath: Path  = _pathCache("java")
   lazy val JAVA_HOME = {
-    val _javaHome: String = _javaPath.getParentFile.posx
+    val _javaHome: String = _javaPath.getParent.posx
     val jh = System.getenv("JAVA_HOME")
     Option(jh).getOrElse(_javaHome)
   }
