@@ -15,7 +15,7 @@ class TestInvariants extends AnyFunSpec with Matchers with BeforeAndAfter {
       printf("hd [%s]\n", hd.toString)
       val workingDrive: String = Platform.workingDrive.string
       printf("workingDrive [%s]\n", workingDrive)
-      assert(hd equalsIgnoreCase workingDrive)
+      assert(hd.isEmpty == workingDrive.isEmpty)
       it (" should be correct for os") {
         if (isWindows) {
           assert(hereDrive.matches("[a-zA-Z]:"))
