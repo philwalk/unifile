@@ -12,7 +12,9 @@ class TestInvariants extends AnyFunSpec with Matchers with BeforeAndAfter {
     // verify test invariants
     describe ("working drive") {
       val hd = Platform.hereDrive
+      printf("hd [%s]\n", hd.toString)
       val workingDrive: String = Platform.workingDrive.string
+      printf("workingDrive [%s]\n", workingDrive)
       assert(hd equalsIgnoreCase workingDrive)
       it (" should be correct for os") {
         if (isWindows) {
