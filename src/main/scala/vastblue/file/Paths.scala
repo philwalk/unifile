@@ -79,7 +79,11 @@ object Paths {
     val _pathstr = derefTilde(_fnamestr) // replace leading tilde with sys.props("user.home")
 
     val psxStr = _pathstr.replace('\\', '/')
-    //require(legalPosixFilename(psxStr), s"filename not legal: [$_pathstr]")
+    val ok = legalPosixFilename(psxStr, true)
+    if (!ok) {
+      hook += 1
+    }
+    require(legalPosixFilename(psxStr, verbose), s"filename not legal: [$_pathstr]")
 
     val p: Path = {
       if (psxStr.startsWith(s"$pwdposx/")) {

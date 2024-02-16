@@ -1,4 +1,7 @@
 val SONATYPE_VERSION = sys.env.getOrElse("SONATYPE_VERSION", "3.10.0") // "3.9.21")
+
+//addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.4.17")
+
 addSbtPlugin("ch.epfl.scala"  % "sbt-bloop"     % "1.5.13")
 addSbtPlugin("ch.epfl.scala"  % "sbt-scalafix"  % "0.11.1")
 addSbtPlugin("org.xerial.sbt" % "sbt-sonatype"  % SONATYPE_VERSION)

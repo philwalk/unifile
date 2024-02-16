@@ -5,11 +5,15 @@ lazy val scalaVer = scala331
 lazy val supportedScalaVersions = List(scala331)
 // lazy val supportedScalaVersions = List(scalaVer)
 
+
 javacOptions ++= Seq("-source", "11", "-target", "11")
+
+//enablePlugins(ScalaNativePlugin)
+//nativeLinkStubs := true
 
 //ThisBuild / envFileName   := "dev.env" // sbt-dotenv plugin gets build environment here
 ThisBuild / scalaVersion  := scalaVer
-ThisBuild / version       := "0.3.0"
+ThisBuild / version       := "0.3.1"
 ThisBuild / versionScheme := Some("semver-spec")
 
 ThisBuild / organization         := "org.vastblue"
@@ -62,14 +66,14 @@ lazy val root = (project in file(".")).
   settings(
     crossScalaVersions := supportedScalaVersions,
     name               := "unifile",
+    description        := "Support for expressive scripting",
  // mainClass          := Some("vast.apps.ShowSysProps"),
     buildInfoKeys      := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
     buildInfoPackage   := "unifile", // available as "import unifile.BuildInfo"
   )
 
 libraryDependencies ++= Seq(
-  "org.scalatest"         %% "scalatest"       % "3.2.17" % Test,
-  "org.scalacheck"        %% "scalacheck"      % "1.17.0" % Test,
+  "org.scalatest"         %% "scalatest"       % "3.2.18" % Test,
   "com.github.sbt"         % "junit-interface" % "0.13.3" % Test,
 )
 

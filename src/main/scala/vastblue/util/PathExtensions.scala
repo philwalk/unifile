@@ -4,6 +4,7 @@ import vastblue.{MainArgs, Platform, Script}
 import vastblue.Platform.{DefaultCharset, _exec, readLines, relativize, standardizePath, toRealPath}
 import vastblue.file.Util.dummyFilter
 import vastblue.file.{Paths, Util}
+import java.time.LocalDateTime
 //import vastblue.time.TimeDate.now
 
 import java.io.File as JFile
@@ -140,8 +141,8 @@ trait PathExtensions {
     Platform._bashCommand(cmdstr, envPairs)
   }
 
-  def quikDate(s: String)     = Util._quikDate(s)
-  def quikDateTime(s: String) = Util._quikDateTime(s)
+  def quikDate(s: String): LocalDateTime     = Util._quikDate(s)
+  def quikDateTime(s: String): LocalDateTime = Util._quikDateTime(s)
 
   def tmpDir = Seq("/f/tmp", "/g/tmp", "/tmp").find { _.path.isDirectory }.getOrElse("/tmp").path.posx
 
@@ -278,14 +279,17 @@ trait PathExtensions {
     }
     def toFile: JFile = p.toFile
     def file: JFile   = p.toFile
+    
     def getContentAsString(charset: Charset = DefaultCharset): String = {
       val posx = p.posx
       if (posx.startsWith("/proc")) {
         _exec("cat", posx)
       } else {
-        new String(byteArray, charset)
+        // conversion to String justifies discarding utf8 BOM, if present
+        new String(byteArrayNoBom, charset)
       }
     }
+
     def contentAsString: String = getContentAsString()
 
     def length: Long  = p.toFile.length
@@ -309,6 +313,7 @@ trait PathExtensions {
     def lines: Seq[String] =  Platform.readLines(p).toSeq // JFiles.readAllLines(p).asScala.toSeq
 
     def delete() = p.toFile.delete()
+
     def byteArray: Array[Byte] = {
       val pstr = p.stdpath
       if (pstr.startsWith("/proc/")) {
@@ -318,6 +323,22 @@ trait PathExtensions {
         JFiles.readAllBytes(p)
       }
     }
+    def byteArrayNoBom: Array[Byte] = {
+      val pstr = p.stdpath
+      if (pstr.startsWith("/proc/")) {
+        val str = exec("cat", "-v", pstr)
+        str.getBytes
+      } else {
+        val arr = JFiles.readAllBytes(p)
+        arr.take(3) match {
+        case Array(-17, -69, -65) =>
+          arr.drop(3) // toss utf8 BOM
+        case _ =>
+          arr
+        }
+      }
+    }
+
     def realPath: Path         = toRealPath(p)
     def realpathLs: Path = { // ask ls what symlink references
       Platform._exec("ls", "-l", p.posx).split("\\s+->\\s+").toList match {

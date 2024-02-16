@@ -132,27 +132,36 @@ object Platform {
   }
 
   // other constraints exist, especially in Windows, but these characters are not
-  // portable, and are not valid one or all of Windows, Linux or Mac.  Note that this
-  // limitation applies only to file path Path segments.
+  // portable, and are not valid somewhere (Windows, Linux or Mac).  Note that this
+  // limitation applies only to file path Path segments, excluding drive prefix.
   lazy val illegalFilenameBytes: Seq[Byte] = {
     Seq('\u0000', '\\', '/', ':', '*', '?', '"', '<', '>', '|').map { _.toByte }.distinct
   }
 
-  def legalFilenameSegment(nameseg: String): Boolean = {
+  def legalFilenameSegment(nameseg: String, verbose: Boolean = false): Boolean = {
     var bytes = nameseg.getBytes
+    if (!isWindows && bytes.take(2).contains(':')) {
+      hook += 1 // client code problem
+    }
     if (isWindows && bytes.take(2).contains(':')) {
       bytes = bytes.drop(2) // remove drive letter (not legal :)
     }
-    bytes.forall { (b: Byte) =>
-      !illegalFilenameBytes.contains(b)
+    val badBytes = bytes.filter { (b: Byte) =>
+      illegalFilenameBytes.contains(b)
     }
+    if (verbose && badBytes.nonEmpty) {
+      val str = new String(badBytes.map { _.toChar })
+      printf("illegal bytes: [%s]\n", str)
+    }
+    badBytes.isEmpty // return Boolean
   }
-  def legalFilename(name: String): Boolean = {
+
+  def legalFilename(name: String, verbose: Boolean = false): Boolean = {
     legalPosixFilename(name.replace('\\', '/'))
   }
-  def legalPosixFilename(name: String): Boolean = {
+  def legalPosixFilename(name: String, verbose: Boolean = false): Boolean = {
     name.split("/").forall {
-      legalFilenameSegment(_)
+      legalFilenameSegment(_, verbose)
     }
   }
   def scriptName: String = Script.scriptName
@@ -365,13 +374,17 @@ object Platform {
   def _isWinshell: Boolean = _isMsys | _isCygwin | _isMingw | _isGitSdk | _isGitbash
   def _isDarwin: Boolean   = _osType == "darwin"
 
-  def _javaHome: String  = _propElseEnv("java.home", JAVA_HOME)
-  def _scalaHome: String = _propElseEnv("scala.home", SCALA_HOME) match {
+  def _javaHome: String  = _propOrElse("java.home", JAVA_HOME)
+
+  def _scalaHome: String = _propOrElse("scala.home", SCALA_HOME) match {
     case "" =>
-      "C:/opt/scala" // should only happen in the IDE, if environment is configured correctly
+      // fallback in IDEA, or if environment misconfigured
+      // (should lead to a more helpful error message)
+      "/opt/scala"
     case s =>
       s
   }
+
   def _username: String  = _propOrElse("user.name", "unknown")
   def _userhome: String  = _propOrElse("user.home", _envOrElse("HOST", "unknown")).replace('\\', '/')
   def _hostname: String  = _envOrElse("HOSTNAME", _envOrElse("COMPUTERNAME", _exec("hostname"))).trim
@@ -389,7 +402,13 @@ object Platform {
   def _envOrEmpty(name: String) = _envOrElse(name, "")
 
   def _propElseEnv(propName: String, envName: String, alt: String = ""): String = {
-    Option(sys.props(propName)).getOrElse(_envOrElse(envName, alt))
+    // Option(sys.props(propName)).getOrElse(_envOrElse(envName, alt))
+    val propval = sys.props(propName)
+    if (Option(propval).nonEmpty) {
+      propval
+    } else {
+      _envOrElse(envName, alt)
+    }
   }
 
   // executable Paths
@@ -1210,11 +1229,15 @@ object Platform {
   }
 
   def _scalaPath: Path  = _pathCache("scala")
+
   lazy val SCALA_HOME = {
     val sp = _scalaPath
-    val _scalaHome: String = sp.getParent.posx.replaceFirst("/bin$", "")
-    val sh = System.getenv("SCALA_HOME")
-    Option(sh).getOrElse(_scalaHome)
+    if (Option(sp).nonEmpty) {
+      sp.getParent.posx.replaceFirst("/bin$", "")
+    } else {
+      val sh = System.getenv("SCALA_HOME")
+      Option(sh).getOrElse("")
+    }
   }
 
   def _javaPath: Path  = _pathCache("java")

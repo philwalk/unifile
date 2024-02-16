@@ -1,4 +1,4 @@
-package vastblue
+package unifile
 
 object Info {
   import java.io.FileInputStream

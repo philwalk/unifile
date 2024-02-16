@@ -5,10 +5,10 @@ import vastblue.Platform.*
 import vastblue.file.ProcfsPaths.*
 import vastblue.util.PathExtensions.*
 
-import java.io.{File => JFile}
+//import java.io.{File => JFile}
 import java.nio.file.{Files => JFiles, Paths => JPaths, Path => JPath}
-import java.io.{BufferedReader, FileReader}
-import scala.util.Using
+//import java.io.{BufferedReader, FileReader}
+//import scala.util.Using
 import scala.jdk.CollectionConverters.*
 
 object Utils  {
@@ -172,7 +172,11 @@ object Utils  {
   }
 
   def scala3Version = {
-    val scalaHomePath = scalaHome.path.realpath.abs
+    val scalaHomePath = {
+      val sh = scalaHome
+      val p = sh.path
+      p.realpath.abs
+    }
     val versionFilename = s"$scalaHomePath/VERSION"
     val versionFile = Paths.get(versionFilename)
     if (versionFile.toFile.exists) {

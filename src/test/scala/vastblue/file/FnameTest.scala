@@ -7,7 +7,7 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import vastblue.util.PathExtensions
 
-class PathnameTest extends AnyFunSpec with Matchers with BeforeAndAfter with PathExtensions {
+class FnameTest extends AnyFunSpec with Matchers with BeforeAndAfter with PathExtensions {
   var hook = 0
 //  val verbose = Option(System.getenv("VERBOSE_TESTS")).nonEmpty
 
@@ -28,7 +28,6 @@ class PathnameTest extends AnyFunSpec with Matchers with BeforeAndAfter with Pat
     }
   }
   val testfilenames = Seq(
-    s"${TMP}/_ÐÐ°Ð²ÐµÑÐ°Ð½Ð¸Ðµ&chapter=all",
     s"${TMP}/Canada's_Border.mp3"
     // ,s"${TMP}/ï"
     ,

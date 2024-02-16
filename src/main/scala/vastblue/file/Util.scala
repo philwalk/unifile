@@ -17,6 +17,7 @@ import java.security.{DigestInputStream, MessageDigest}
 import scala.jdk.CollectionConverters.*
 import scala.sys.process.*
 import java.nio.charset.Charset
+import java.time.LocalDateTime
 
 // code common to scala3 and scala2.13 versions
 object Util {
@@ -387,6 +388,17 @@ object Util {
     }
   }
 
+  def bytesNoBom(p: Path): Array[Byte] = {
+    val arr = JFiles.readAllBytes(p)
+    arr.take(3) match {
+    case Array(-17, -69, -65) => arr.drop(3)
+    case bytes => bytes
+    }
+  }
+  def bytesNoBom(f: JFile): Array[Byte] = {
+    bytesNoBom(f.toPath)
+  }
+
   def readAllBytes(p: Path): Array[Byte] = {
     def segments: Seq[Path]  = p.iterator().asScala.toSeq
     def firstSegment: String = segments.head.toString
@@ -466,6 +478,7 @@ object Util {
       }
     (charset, string)
   }
+
   def readContentAsString(p: Path): String = {
     val (_, string) = charsetAndContent(p)
     string
@@ -732,7 +745,8 @@ object Util {
     val lcname = jfile.getName.toLowerCase
     var hook   = 0
     if (lcname != "stdout") {
-      Option(jfile.getParentFile) match {
+      import vastblue.util.PathExtensions.*
+      Option(p.getParentPath) match {
       case Some(parent) =>
         if (parent.exists) {
           hook += 1
@@ -811,22 +825,22 @@ object Util {
 
 //  import vastblue.time.TimeDate.*
 
-  private[vastblue] def _quikDate(s: String) = {
+  private[vastblue] def _quikDate(s: String): LocalDateTime = {
     _quikDateTime(s.take(10))
   }
 
-  private[vastblue] def _quikDateTime(s: String) = {
+  private[vastblue] def _quikDateTime(s: String): LocalDateTime = {
     require(s.matches("""[0-9]{4}\D[0-9]{2}\D[0-9]{2}.*"""))
     var ff = s.split("[^0-9]+").filter { _.trim.nonEmpty }.map { _.toInt }
     ff match {
     case Array(y, m, d) =>
-      java.time.LocalDateTime.of(y, m, d, 0, 0, 0)
+      LocalDateTime.of(y, m, d, 0, 0, 0)
     case Array(y, m, d, h, mn) =>
-      java.time.LocalDateTime.of(y, m, d, h, mn, 0)
+      LocalDateTime.of(y, m, d, h, mn, 0)
     case Array(y, m, d, h, mn, s) =>
-      java.time.LocalDateTime.of(y, m, d, h, mn, s)
+      LocalDateTime.of(y, m, d, h, mn, s)
     case Array(y, m, d, h) =>
-      java.time.LocalDateTime.of(y, m, d, h, 0, 0)
+      LocalDateTime.of(y, m, d, h, 0, 0)
     case _ =>
       sys.error(s"bad dateTime: [$s]")
     }

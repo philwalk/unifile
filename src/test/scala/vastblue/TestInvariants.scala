@@ -38,7 +38,7 @@ class TestInvariants extends AnyFunSpec with Matchers with BeforeAndAfter {
       }
     }
     describe("scalaHome") {
-      it ("show not be empty") {
+      it ("should be defined") {
         eprintf("SCALA_HOME [%s]\n" , SCALA_HOME) // might be empty
         eprintf("scalaHome  [%s]\n" , scalaHome)  // should never be empty
       }

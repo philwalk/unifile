@@ -4,7 +4,7 @@
 + Simplify system administration tasks.
 + no 3rd party libraries, 100% scala.
 
-For this functionality, plus reading of `.csv`, expressive Date & Time functions, and more, see [Pallet](https://github.com/philwalk/pallet) instead (has 3rd party dependencies).
+For this functionality, plus reading of `.csv`, expressive Date & Time functions, and more, see [Pallet](https://github.com/philwalk/unifile) instead (has 3rd party dependencies).
 
 Write one version of code to run in Linux, Mac, or Windows posix shell environments.
 JVM support for `java.nio.file.Path` objects that work everywhere.
@@ -30,7 +30,7 @@ Work with Posix paths in Windows, recognized mount points in `/etc/fstab`.
 
 To use `unifile` in an `SBT` project, add this dependency to `build.sbt`
 ```sbt
-  "org.vastblue" % "unifile_3" % "0.3.0"
+  "org.vastblue" % "unifile_3" % "0.3.1"
 ```
 For `scala` or `scala-cli` scripts, see examples below.
 
@@ -70,7 +70,7 @@ This example might surprise developers working in a `Windows` posix shell, since
 #!/ usr / bin / env -S scala -cli shebang
 
 //> using scala "3.3.1"
-//> using lib "org.vastblue::unifile::0.3.0"
+//> using lib "org.vastblue::unifile::0.3.1"
 
 import vastblue.unifile.Paths
 
