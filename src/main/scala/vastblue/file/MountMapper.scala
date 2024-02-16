@@ -1,6 +1,6 @@
 package vastblue.file
 
-import vastblue.Platform.{_execLines, _notWindows, _pwd, _shellRoot, cygpathExe, posixrootBare, workingDrive}
+import vastblue.Platform.{_execLines, _notWindows, _pwd, _shellRoot, cygpathExe, workingDrive}
 import vastblue.file.DriveRoot.*
 import vastblue.file.Util.readLines
 import vastblue.util.Utils.isAlpha
@@ -213,7 +213,7 @@ object MountMapper {
           // looks like a cygdrive designator replace '/cygdrive/X' with 'X:/'
           s"$firstSeg:/${segments.tail.mkString("/")}"
         } else {
-          val rr = posixrootBare
+          val rr = shellRoot
           s"$rr$pathstr"
         }
       } else {

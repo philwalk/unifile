@@ -1,5 +1,5 @@
 #!/usr/bin/env -S scala
-package vastblue.demo
+//package vastblue.demo
 
 import vastblue.unifile.*
 import vastblue.file.Util.*

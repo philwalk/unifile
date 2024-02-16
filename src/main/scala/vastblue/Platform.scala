@@ -682,9 +682,6 @@ object Platform {
     }
   }
 
-  lazy val posixrootBare = {
-    posixroot.reverse.dropWhile(_ == '/').reverse
-  }
   lazy val posixroot: String = {
     if (_notWindows) {
       "/"
@@ -1141,7 +1138,7 @@ object Platform {
     var cd2r          = true // by default /c should mount to c:/ in windows
     if (_isWindows) {
       // cygwin provides default values, potentially overridden in fstab
-      val rr = posixrootBare
+      val rr = posixroot.reverse.dropWhile(_ == '/').reverse
       localMountMap += "/usr/bin" -> s"$rr/bin"
       localMountMap += "/usr/lib" -> s"$rr/lib"
       // next 2 are convenient, but MUST be added before reading fstab

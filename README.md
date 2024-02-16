@@ -67,7 +67,7 @@ This library provides the missing piece.
 This example might surprise developers working in a `Windows` posix shell, since `jvm` languages normally cannot see posix file paths that aren't also legal `Windows` paths.
 
 ```scala
-#!/ usr / bin / env -S scala -cli shebang
+#!/usr/bin/env -S scala -cli shebang
 
 //> using scala "3.3.1"
 //> using lib "org.vastblue::unifile::0.3.1"
@@ -76,7 +76,7 @@ import vastblue.unifile.Paths
 
 object FstabCli {
   def main(args: Array[String]): Unit = {
-    // `posixroot` is the native path corresponding to "/"
+    // `shellRoot` is the native path corresponding to "/"
     // display the native path and lines.size of /etc/fstab
     val p = Paths.get("/etc/fstab")
     val lines = java.nio.file.Files.readAllLines(p).asScala.toSeq
@@ -89,11 +89,11 @@ FstabCli.main(args)
 ```
 ### Output of the previous example scripts on various platforms:
 ```
-Linux Mint # env: GNU/Linux | posixroot: /           | /etc/fstab            | 21 lines
-Darwin     # env: Darwin    | posixroot: /           | /etc/fstab            | 0 lines
-WSL Ubuntu # env: GNU/Linux | posixroot: /           | /etc/fstab            | 6 lines
-Cygwin64   # env: Cygwin    | posixroot: C:/cygwin64 | C:/cygwin64/etc/fstab | 24 lines
-Msys64     # env: Msys      | posixroot: C:/msys64/  | C:/msys64/etc/fstab   | 22 lines
+Linux Mint # env: GNU/Linux | shellRoot: /           | /etc/fstab            | 21 lines
+Darwin     # env: Darwin    | shellRoot: /           | /etc/fstab            | 0 lines
+WSL Ubuntu # env: GNU/Linux | shellRoot: /           | /etc/fstab            | 6 lines
+Cygwin64   # env: Cygwin    | shellRoot: C:/cygwin64 | C:/cygwin64/etc/fstab | 24 lines
+Msys64     # env: Msys      | shellRoot: C:/msys64/  | C:/msys64/etc/fstab   | 22 lines
 ```
 Note that on Darwin, there is no `/etc/fstab` file, so the `Path#lines` extension returns `Nil`.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env -S scala
-package vastblue.demo
+//package vastblue.demo
 
 //> using scala "3.3.1"
 //> using lib "org.vastblue::unifile:0.3.1"
@@ -7,9 +7,9 @@ package vastblue.demo
 import vastblue.unifile.*
 
 object BashPath {
-  lazy val bashPath = where("bash").path
+  val bashPath = where("bash").path
 
-  def main(args: Array[String]): Unit =
+  def main(args: Array[String]): Unit = {
     printf("userhome: [%s]\n", userhome)
     import scala.sys.process.*
     val progname = if (isWindows) {
@@ -24,4 +24,5 @@ object BashPath {
     printf("%s\n", bashPath.toRealPath())
     printf("shellRoot: %s\n", shellRoot)
     printf("sys root:  %s\n", where("bash").posx.replaceAll("(/usr)?/bin/bash.*", ""))
+  }
 }

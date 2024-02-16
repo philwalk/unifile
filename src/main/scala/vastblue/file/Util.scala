@@ -860,8 +860,9 @@ object Util {
   }
 
   // windows-specific
-  def isWindowsJunction(filename:String, enable:Boolean=true):(Boolean, String) = {
+  def isWindowsJunction(_filename: String, enable: Boolean=true): (Boolean, String) = {
     import scala.sys.process.*
+    val filename = Paths.get(_filename).toAbsolutePath.normalize.toString.replace('\\', '/')
     // also known as a junction point
     var (junctionFlag, substituteName) = (false, "")
     if( isWindows && enable ){
