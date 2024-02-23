@@ -1,5 +1,5 @@
 #!/usr/bin/env -S scala @./atFile
-package vastblue.demo
+//package vastblue.demo
 
 import vastblue.unifile.*
 import scala.sys.process.*

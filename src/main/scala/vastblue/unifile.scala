@@ -16,9 +16,9 @@ object unifile extends PathExtensions {
 
   def cygdrive: String    = Platform.cygdrive
   def driveRoot: String   = Platform.driveRoot
+  def posixroot: String   = Platform.posixroot
   def isDirectory(path: String): Boolean = Platform.isDirectory(path)
 
-  def where(basename: String): String                             = Platform._where(basename)
   def which(basename: String): String                             = Platform.which(basename)
   def find(basename: String, dirs: Seq[String] = envPath): String = Platform.which(basename)
 

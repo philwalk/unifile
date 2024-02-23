@@ -1,5 +1,5 @@
 #!/usr/bin/env -S scala -deprecation
-package vastblue.demo
+//package vastblue.demo
 
 import vastblue.Platform.*
 import vastblue.file.ProcfsPaths.*
