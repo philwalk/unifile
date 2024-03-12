@@ -117,7 +117,14 @@ trait PathExtensions {
 
   def eachArg: (Seq[String], String => Nothing) => (String => Unit) => Unit = ArgsUtil.eachArg _
 
+  def walkTreeFast(p: Path, tossDirs: Set[String], maxdepth: Int = -1)(filt: Path => Boolean): (Long, Long) = {
+    vastblue.file.TreeWalker.walkTreeFast(p, tossDirs, maxdepth)(filt)
+  }
   def walkTree(file: JFile, depth: Int = 1, maxdepth: Int = -1): Iterable[JFile] = vastblue.file.Util.walkTree(file, depth, maxdepth)
+
+  def walkTreeFiltered(file: JFile, depth: Int = 1, maxdepth: Int = -1)(filt: JFile => Boolean): Iterable[JFile] = {
+    vastblue.file.Util.walkTreeFiltered(file, depth, maxdepth)(filt)
+  }
 
 //  def filesTree(dir: JFile)(func: JFile => Boolean = Util.dummyFilter): Seq[JFile] = vastblue.file.Util.filesTree(dir.toFile)(func)
 
@@ -183,6 +190,13 @@ trait PathExtensions {
 
     //def lastModifiedTime        = whenModified(p.toFile)
     def lastModified: Long        = p.toFile.lastModified
+
+    def newerThan(other: Path): Boolean = {
+      p.isFile && other.isFile && other.lastModified > p.lastModified
+    }
+    def olderThan(other: Path): Boolean = {
+      p.isFile && other.isFile && other.lastModified < p.lastModified
+    }
 
     def lastModifiedMillisAgo: Long  = System.currentTimeMillis - p.toFile.lastModified
     def lastModSecondsAgo: Double    = (lastModifiedMillisAgo/1000L).toDouble
@@ -445,7 +459,7 @@ trait PathExtensions {
 
     // comparable to Some(dotsuffix):
     def extension: Option[String] = f.getName.reverse match {
-      case s if s.contains(".") && !s.endsWith(".") => Some(s.dropWhile(_!='.').reverse)
+      case s if s.contains(".") && !s.endsWith(".") => Some(s.reverse.dropWhile(_!='.'))
       case s => None
     }
     def renameTo(s: String): Boolean = renameTo(s.path)

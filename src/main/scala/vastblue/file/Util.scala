@@ -351,6 +351,7 @@ object Util {
     val sum = md.digest.map(b => String.format("%02x", Byte.box(b))).mkString
     sum
   }
+
   def walkTree(file: JFile, depth: Int = 1, maxdepth: Int = -1): Iterable[JFile] = {
     val children = new Iterable[JFile] {
       def iterator = if (file.isDirectory) file.listFiles.iterator else Iterator.empty
@@ -360,6 +361,20 @@ object Util {
         walkTree(f, depth + 1, maxdepth)
       } else {
         Seq(f)
+      }
+    )
+  }
+  def walkTreeFiltered(file: JFile, depth: Int = 1, maxdepth: Int = -1)(filt: JFile => Boolean): Iterable[JFile] = {
+    val children = new Iterable[JFile] {
+      def iterator = if (file.isDirectory) file.listFiles.iterator else Iterator.empty
+    }
+    Seq(file) ++ children.flatMap((f: JFile) =>
+      if ((maxdepth < 0 || depth < maxdepth) && f.isDirectory) {
+        walkTree(f, depth + 1, maxdepth)
+      } else if (filt(f)) {
+        Seq(f)
+      } else {
+        Nil
       }
     )
   }
@@ -691,16 +706,34 @@ object Util {
   }
 
   def cksum(p: Path): Long = {
-    val bytes = readAllBytes(p)
-    Cksum.gnuCksum(bytes.iterator)._1
-  }
-  def cksumNe(p: Path): Long = {
-    val content = removeNonprinting(readContentAsString(p))
-    Cksum.gnuCksum(content.getBytes)._1
+    if (p.toFile.length < (Integer.MAX_VALUE-8)) {
+      val bytes = readAllBytes(p)
+      Cksum.gnuCksum(bytes.iterator)._1
+    } else {
+      cliCksum(p)._1
+    }
   }
 
   def gnuCksum(p: Path): (Long, Long) = {
-    Cksum.gnuCksum(readContentAsString(p).getBytes)
+    if (p.toFile.length < (Integer.MAX_VALUE-8)) {
+      Cksum.gnuCksum(readContentAsString(p).getBytes)
+    } else {
+      cliCksum(p)
+    }
+  }
+
+  def cliCksum(p: Path): (Long, Long) = {
+    def q = "\""
+    val cmd = s"$q${posx(p)}$q"
+    val cksumstr = Platform._shellExec(s"cksum $cmd").mkString.trim
+    val Array(cksum, bytes) = cksumstr.replaceAll(" *([0-9]+) *([0-9]+) .*", "$1 $2").split(" ")
+    (cksum.trim.toLong, bytes.trim.toLong)
+  }
+
+  def cksumNe(p: Path): Long = {
+    // TODO: only supports files of 2Gbytes or less, due to jvm max array size
+    val content = removeNonprinting(readContentAsString(p))
+    Cksum.gnuCksum(content.getBytes)._1
   }
 
   // Copy source file to destination.
