@@ -61,6 +61,9 @@ resolvers += Resolver.mavenLocal
 
 publishTo := sonatypePublishToBundle.value
 
+Compile / packageBin / packageOptions +=
+  Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> "")
+
 lazy val root = (project in file(".")).
   enablePlugins(BuildInfoPlugin).
   settings(
