@@ -5,7 +5,7 @@ object Info {
   import java.util.jar.JarInputStream
 
   lazy val scalaRuntimeVersion: String = {
-    val scala3LibJar = classOf[CanEqual[_, _]].getProtectionDomain.getCodeSource.getLocation.toURI.getPath
+    val scala3LibJar = classOf[CanEqual[?, ?]].getProtectionDomain.getCodeSource.getLocation.toURI.getPath
     val manifest     = new JarInputStream(new FileInputStream(scala3LibJar)).getManifest
     manifest.getMainAttributes.getValue("Implementation-Version")
   }

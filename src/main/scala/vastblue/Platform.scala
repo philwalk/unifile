@@ -172,7 +172,7 @@ object Platform {
 
   // returns a String
   def _exec(args: String*): String = {
-    _execLines(args: _*).toList.mkString("")
+    _execLines(args *).toList.mkString("")
   }
 
   // returns a LazyList
@@ -389,9 +389,9 @@ object Platform {
   def _userhome: String  = _propOrElse("user.home", _envOrElse("HOST", "unknown")).replace('\\', '/')
   def _hostname: String  = _envOrElse("HOSTNAME", _envOrElse("COMPUTERNAME", _exec("hostname"))).trim
 
-  def _eprint(xs: Any*): Unit               = System.err.print("%s".format(xs: _*))
+  def _eprint(xs: Any*): Unit               = System.err.print("%s".format(xs *))
   def _oprintf(fmt: String, xs: Any*): Unit = System.out.printf(fmt, xs) // suppresswarnings:discarded-value
-  def _eprintf(fmt: String, xs: Any*): Unit = System.err.print(fmt.format(xs: _*))
+  def _eprintf(fmt: String, xs: Any*): Unit = System.err.print(fmt.format(xs *))
 
   def _propOrElse(name: String, alt: => String): String = System.getProperty(name, alt)
 
@@ -534,7 +534,7 @@ object Platform {
    * Stderr is handled by `func` (println by default).
    */
   def executeCmd(_cmd: Seq[String])(func: String => Unit = System.err.println): (Int, List[String]) = {
-    val cmd    = prepExecArgs(_cmd: _*).toArray
+    val cmd    = prepExecArgs(_cmd *).toArray
     var stdout = List[String]()
 
     val exit = Process(cmd) ! ProcessLogger(
@@ -552,7 +552,7 @@ object Platform {
   def _shellExec(str: String, env: Map[String, String]): LazyList[String] = {
     val cmd      = Seq(_exeCache("bash"), "-c", str)
     val envPairs = env.map { case (a, b) => (a, b) }.toList
-    val proc     = Process(cmd, hereJfile, envPairs: _*)
+    val proc     = Process(cmd, hereJfile, envPairs *)
     proc.lazyLines_!
   }
 

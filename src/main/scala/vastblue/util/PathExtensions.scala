@@ -54,7 +54,7 @@ trait PathExtensions {
 
   def uname: (String) => String = Platform._uname
 
-  def cygpath(exename: String, args: String*): String = Platform._cygpath(exename, args: _*)
+  def cygpath(exename: String, args: String*): String = Platform._cygpath(exename, args *)
 
   def unameLong: String  = Platform._unameLong
   def unameShort: String = Platform._unameShort
@@ -63,17 +63,17 @@ trait PathExtensions {
 //  def today     = now
 //  def yesterday = now - 1.days
 
-  def eprintf(fmt: String, xs: Any*): Unit = Platform._eprintf(fmt, xs: _*)
-  def oprintf(fmt: String, xs: Any*): Unit = Platform._oprintf(fmt, xs: _*)
+  def eprintf(fmt: String, xs: Any*): Unit = Platform._eprintf(fmt, xs *)
+  def oprintf(fmt: String, xs: Any*): Unit = Platform._oprintf(fmt, xs *)
 
   def envOrEmpty: (String) => String         = Platform._envOrEmpty
   def envOrElse: (String, String) => String  = Platform._envOrElse
   def propOrEmpty: (String) => String        = Platform._propOrEmpty
   def propOrElse: (String, String) => String = Platform._propOrElse
   def where: (String) => String              = Platform._where
-  def exec(args: String*): String            = Platform._exec(args: _*)
+  def exec(args: String*): String            = Platform._exec(args *)
 
-  def execLines(args: String*): LazyList[String] = Platform._execLines(args: _*)
+  def execLines(args: String*): LazyList[String] = Platform._execLines(args *)
 
   def shellExec(str: String): LazyList[String]                           = Platform._shellExec(str)
   def shellExec(str: String, env: Map[String, String]): LazyList[String] = Platform._shellExec(str, env)
@@ -110,12 +110,12 @@ trait PathExtensions {
   def consumeArgs(n: Int): Seq[String] = ArgsUtil.consumeArgs(n)
 
   def _usage(m: String, info: Seq[String]): Nothing = ArgsUtil.Usage.usage(m, info)
-  
+
   //def scalaHome: String = Utils.scalaHome
 
   def scala3Version: String = Utils.scala3Version
 
-  def eachArg: (Seq[String], String => Nothing) => (String => Unit) => Unit = ArgsUtil.eachArg _
+  def eachArg: (Seq[String], String => Nothing) => (String => Unit) => Unit = ArgsUtil.eachArg
 
   def walkTreeFast(p: Path, tossDirs: Set[String], maxdepth: Int = -1)(filt: Path => Boolean): (Long, Long) = {
     vastblue.file.TreeWalker.walkTreeFast(p, tossDirs, maxdepth)(filt)
@@ -268,7 +268,7 @@ trait PathExtensions {
 
     def relpath: Path        = Util.relativize(p) // Platform?
     def relativePath: String = relpath.toString.posx
-   
+
     // none of these extension methods are overrides of JFile or Path
     // null is never a return value
     def parentPath: Path    = getParentPath
@@ -293,7 +293,7 @@ trait PathExtensions {
     }
     def toFile: JFile = p.toFile
     def file: JFile   = p.toFile
-    
+
     def getContentAsString(charset: Charset = DefaultCharset): String = {
       val posx = p.posx
       if (posx.startsWith("/proc")) {
@@ -386,7 +386,7 @@ trait PathExtensions {
       p.toString.posx
     }
 
-  
+
     def dateSuffix: String = {
       lcbasename match {
       case Util.DatePattern1(_, yyyymmdd, _) =>
@@ -397,7 +397,7 @@ trait PathExtensions {
         ""
       }
     }
-    
+
     // useful for examining shebang line
     def firstline: String = Util.readLines(p).take(1).mkString("")
     def cksumNe: Long  = Util.cksumNe(p)
@@ -417,7 +417,7 @@ trait PathExtensions {
       Util.withPathWriter(p, charsetName, append)(func)
     }
   }
-  
+
   extension (f: JFile) {
     def path: Path      = f.toPath
     def realfile: JFile = path.realpath.toFile

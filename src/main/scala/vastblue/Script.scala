@@ -96,13 +96,13 @@ object Script {
     System.err.print(text)
   }
   def _eprintf(fmt: String, xs: Any*): Unit = {
-    System.err.print(fmt.format(xs: _*))
+    System.err.print(fmt.format(xs *))
   }
   def _eprint(xs: Any*): Unit = {
-    System.err.print("%s".format(xs: _*))
+    System.err.print("%s".format(xs *))
   }
 
-  def getClassName(claz: Class[_]): String = {
+  def getClassName(claz: Class[?]): String = {
     claz.getName.stripSuffix("$").replaceAll(""".*[^a-zA-Z_0-9]""", "") // delete thru the last non-identifier char
   }
   def getClassName(main: AnyRef): String = {

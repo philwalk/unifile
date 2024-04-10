@@ -1,8 +1,8 @@
-//lazy val scala213 = "2.13.12"
-lazy val scala331 = "3.3.1"
-lazy val scalaVer = scala331
+//lazy val scala213 = "2.13.13"
+lazy val scala3 = "3.4.1"
+lazy val scalaVer = scala3
 
-lazy val supportedScalaVersions = List(scala331)
+lazy val supportedScalaVersions = List(scala3)
 // lazy val supportedScalaVersions = List(scalaVer)
 
 

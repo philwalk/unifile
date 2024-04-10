@@ -17,7 +17,7 @@ class TestInvariants extends AnyFunSpec with Matchers with BeforeAndAfter {
       printf("workingDrive [%s]\n", workingDrive)
       it (" should be correct for os") {
         if (isWindows) {
-          assert(hd equalsIgnoreCase workingDrive)
+          assert(hd.equalsIgnoreCase(workingDrive))
           assert(hereDrive.matches("[a-zA-Z]:"))
         } else {
           assert(hereDrive.isEmpty)
