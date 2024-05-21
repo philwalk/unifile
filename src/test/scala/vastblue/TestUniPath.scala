@@ -9,9 +9,15 @@ import org.scalatest.*
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
+// TODO:
+// add verification tests:
+//    at most one of `isCygwin`, `isMsys`, etc. are true
+//    uname is known or believable
+//    etc.
+
 class TestUniPath extends AnyFunSpec with Matchers with BeforeAndAfter {
-  describe ("Unipath") {
-    it ("should display discovered environment") {
+  describe("Unipath") {
+    it("should display discovered environment") {
       val wherebash = _where("bash")
       val test      = Paths.get(wherebash)
       printf("bash [%s]\n", test)

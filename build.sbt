@@ -1,5 +1,5 @@
 //lazy val scala213 = "2.13.13"
-lazy val scala3 = "3.3.1"
+lazy val scala3   = "3.3.3"
 lazy val scalaVer = scala3
 
 lazy val supportedScalaVersions = List(scala3)
@@ -11,7 +11,7 @@ javacOptions ++= Seq("-source", "11", "-target", "11")
 
 //ThisBuild / envFileName   := "dev.env" // sbt-dotenv plugin gets build environment here
 ThisBuild / scalaVersion  := scalaVer
-ThisBuild / version       := "0.3.2"
+ThisBuild / version       := "0.3.3"
 ThisBuild / versionScheme := Some("semver-spec")
 
 ThisBuild / organization         := "org.vastblue"
@@ -21,9 +21,6 @@ ThisBuild / organizationHomepage := Some(url("https://vastblue.org"))
 //cancelable in Global := true
 
 parallelExecution := false
-
-
-
 
 ThisBuild / scmInfo := Some(
   ScmInfo(
@@ -65,22 +62,18 @@ publishTo := sonatypePublishToBundle.value
 Compile / packageBin / packageOptions +=
   Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> "")
 
-lazy val root = (project in file(".")).
-  enablePlugins(BuildInfoPlugin).
-  settings(
-    crossScalaVersions := supportedScalaVersions,
-    name               := "unifile",
-    description        := "Support for expressive scripting",
- // mainClass          := Some("vast.apps.ShowSysProps"),
-    buildInfoKeys      := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
-    buildInfoPackage   := "unifile", // available as "import unifile.BuildInfo"
-  )
+lazy val root = (project in file(".")).enablePlugins(BuildInfoPlugin).settings(
+  crossScalaVersions := supportedScalaVersions,
+  name               := "unifile",
+  description        := "Support for expressive scripting",
+  // mainClass          := Some("vast.apps.ShowSysProps"),
+  buildInfoKeys    := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+  buildInfoPackage := "unifile", // available as "import unifile.BuildInfo"
+)
 
 libraryDependencies ++= Seq(
-  "org.scalatest"         %% "scalatest"       % "3.2.18" % Test,
+  "org.scalatest" %% "scalatest" % "3.2.18" % Test,
 //"com.github.sbt"         % "junit-interface" % "0.13.3" % Test,
-
-
 
 )
 

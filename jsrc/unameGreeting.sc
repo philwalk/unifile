@@ -1,11 +1,11 @@
 //#!/usr/bin/env -S scala
 //package vastblue.demo
 
-//> using lib "org.vastblue::unifile:0.3.2"
+//> using lib "org.vastblue::unifile:0.3.3"
 import vastblue.unifile.*
 
 object UnameGreeting {
-  def main(args: Array[String]): Unit = 
+  def main(args: Array[String]): Unit =
     printf("uname / osType / osName:\n%s\n", s"platform info: ${unameShort} / ${osType} / ${osName}")
     if (isLinux) {
       // uname is "Linux"

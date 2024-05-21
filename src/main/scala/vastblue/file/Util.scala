@@ -381,7 +381,7 @@ object Util {
 
   def relativize(p: Path): Path = {
     val pnorm = nativePathString(p)
-    val cwd = cwdnorm
+    val cwd   = cwdnorm
     if (pnorm == cwd) {
       Paths.get("./")
     } else if (pnorm.startsWith(cwdnorm)) {
@@ -406,7 +406,7 @@ object Util {
     val arr = JFiles.readAllBytes(p)
     arr.take(3) match {
     case Array(-17, -69, -65) => arr.drop(3)
-    case bytes => bytes
+    case bytes                => bytes
     }
   }
   def bytesNoBom(f: JFile): Array[Byte] = {
@@ -638,17 +638,12 @@ object Util {
   // Replace problematic baseame characters with hyphen (or `rep`).
   // Then combine leading, trailing, and consecutive `rep` characters.
   // Does not do anything to the extension, if present.
-  def uncomplicateBasename(p: Path, rep: String="-"): String = {
-    val extension = p.toFile.getName.dropWhile(_=='.').split(".").reverse.headOption match {
-      case None => ""
-      case Some(s) => s".$s"
+  def uncomplicateBasename(p: Path, rep: String = "-"): String = {
+    val extension = p.toFile.getName.dropWhile(_ == '.').split(".").reverse.headOption match {
+    case None    => ""
+    case Some(s) => s".$s"
     }
-    val fixedBasename = basename(p).
-      replaceAll("""[^-a-zA-Z_0-9\.]+""", rep).
-      replaceAll(s"""$rep+""",rep).
-      replaceAll(s"^$rep","").
-      replaceAll(s"$rep" + "$","").
-      replaceAll(s"$rep\\.",".")
+    val fixedBasename = basename(p).replaceAll("""[^-a-zA-Z_0-9\.]+""", rep).replaceAll(s"""$rep+""", rep).replaceAll(s"^$rep", "").replaceAll(s"$rep" + "$", "").replaceAll(s"$rep\\.", ".")
     s"$fixedBasename$extension"
   }
 
@@ -661,8 +656,8 @@ object Util {
       (p, false) // not renamed
     } else {
       val newPath = Paths.get(p.toFile.getParent.toString, newName)
-      if( _renameViaCopy(p.toFile, newPath.toFile, overwrite=false) != 0 ){
-        if (_verbose){
+      if (_renameViaCopy(p.toFile, newPath.toFile, overwrite = false) != 0) {
+        if (_verbose) {
           System.err.printf("unable to rename from [%s] to [%s]".format(name(p), newName))
         }
         (newPath, false) // not renamed
@@ -671,7 +666,6 @@ object Util {
       }
     }
   }
-
 
   /**
   * Assertion error if newfile already exists and !overwrite.
@@ -705,7 +699,7 @@ object Util {
   }
 
   def cksum(p: Path): Long = {
-    if (p.toFile.length < (Integer.MAX_VALUE-8)) {
+    if (p.toFile.length < (Integer.MAX_VALUE - 8)) {
       val bytes = readAllBytes(p)
       Cksum.gnuCksum(bytes.iterator)._1
     } else {
@@ -714,7 +708,7 @@ object Util {
   }
 
   def gnuCksum(p: Path): (Long, Long) = {
-    if (p.toFile.length < (Integer.MAX_VALUE-8)) {
+    if (p.toFile.length < (Integer.MAX_VALUE - 8)) {
       Cksum.gnuCksum(readContentAsString(p).getBytes)
     } else {
       cliCksum(p)
@@ -722,9 +716,9 @@ object Util {
   }
 
   def cliCksum(p: Path): (Long, Long) = {
-    def q = "\""
-    val cmd = s"$q${posx(p)}$q"
-    val cksumstr = Platform._shellExec(s"cksum $cmd").mkString.trim
+    def q                   = "\""
+    val cmd                 = s"$q${posx(p)}$q"
+    val cksumstr            = Platform._shellExec(s"cksum $cmd").mkString.trim
     val Array(cksum, bytes) = cksumstr.replaceAll(" *([0-9]+) *([0-9]+) .*", "$1 $2").split(" ")
     (cksum.trim.toLong, bytes.trim.toLong)
   }
@@ -883,7 +877,7 @@ object Util {
     import java.io.PrintStream
     val filterOut: PrintStream = new PrintStream(System.err) {
       override def println(l: String): Unit = {
-        if ( !l.startsWith("SLF4J") ) {
+        if (!l.startsWith("SLF4J")) {
           super.println(l)
         }
       }
@@ -892,16 +886,16 @@ object Util {
   }
 
   // windows-specific
-  def isWindowsJunction(_filename: String, enable: Boolean=true): (Boolean, String) = {
+  def isWindowsJunction(_filename: String, enable: Boolean = true): (Boolean, String) = {
     import scala.sys.process.*
     val filename = Paths.get(_filename).toAbsolutePath.normalize.toString.replace('\\', '/')
     // also known as a junction point
     var (junctionFlag, substituteName) = (false, "")
-    if( isWindows && enable ){
-      val cmd = Seq("fsutil", "reparsepoint", "query", filename)
+    if (isWindows && enable) {
+      val cmd   = Seq("fsutil", "reparsepoint", "query", filename)
       val lines = Process(cmd).lazyLines_!.toList
-      junctionFlag = lines.contains("Tag value: Mount Point") //|| lines.contains("Tag value: Symbolic Link")
-      if( junctionFlag ){
+      junctionFlag = lines.contains("Tag value: Mount Point") // || lines.contains("Tag value: Symbolic Link")
+      if (junctionFlag) {
         val linetag = "Substitute Name:"
         substituteName = lines.filter { _.startsWith(linetag) } match {
         case line :: Nil =>
@@ -949,7 +943,7 @@ object Util {
   }
   def dotsuffix(p: Path): String = {
     val name = p.toFile.getName
-    val dot = dotsuffix(name)
+    val dot  = dotsuffix(name)
     dot
   }
 
@@ -986,17 +980,18 @@ object Util {
     }
     posxPath(jpath)
   }
-  def posxPath(path: Path): Path = try {
-    val s = path.toString
-    if (s.length == 2 && s.take(2).endsWith(":")) {
-      cwd
-    } else {
-      path.toAbsolutePath.normalize
+  def posxPath(path: Path): Path =
+    try {
+      val s = path.toString
+      if (s.length == 2 && s.take(2).endsWith(":")) {
+        cwd
+      } else {
+        path.toAbsolutePath.normalize
+      }
+    } catch {
+      case e: java.io.IOError =>
+        path
     }
-  } catch {
-    case e: java.io.IOError =>
-      path
-  }
 
   def isSameFile(p1: Path, p2: Path): Boolean = {
     val cs1 = dirIsCaseSensitive(p1)

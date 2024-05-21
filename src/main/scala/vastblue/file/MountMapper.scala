@@ -28,24 +28,23 @@ object MountMapper {
   // /etc is not mounted, but also must be translated a-la cygpath:
   //    translate mounted entry, if present
   //    otherwise, replace '/' with C:/msys64
-  lazy val etcFstab   = s"$shellRoot/etc/fstab".replaceAll("[\\/]+", "/")
+  lazy val etcFstab = s"$shellRoot/etc/fstab".replaceAll("[\\/]+", "/")
 
- 
   // mutable fields to support unit testing
-  private var _mountMap = Map.empty[String, String]
-  def mountMap: Map[String, String] = _mountMap
+  private var _mountMap                          = Map.empty[String, String]
+  def mountMap: Map[String, String]              = _mountMap
   def mountMap_=(map: Map[String, String]): Unit = _mountMap = map
 
-  private var _cygdrive: String = ""
-  def cygdrive: String = _cygdrive
+  private var _cygdrive: String   = ""
+  def cygdrive: String            = _cygdrive
   def cygdrive_=(s: String): Unit = _cygdrive = s
 
-  private var _reverseMountMap = Map.empty[String, String]
-  def reverseMountMap: Map[String, String] = _reverseMountMap
+  private var _reverseMountMap                          = Map.empty[String, String]
+  def reverseMountMap: Map[String, String]              = _reverseMountMap
   def reverseMountMap_=(map: Map[String, String]): Unit = _reverseMountMap = map
 
-  private var _posix2localMountMap = Map.empty[String, String]
-  def posix2localMountMap: Map[String, String] = _posix2localMountMap
+  private var _posix2localMountMap                          = Map.empty[String, String]
+  def posix2localMountMap: Map[String, String]              = _posix2localMountMap
   def posix2localMountMap_=(map: Map[String, String]): Unit = _posix2localMountMap = map
 
   case class FsEntry(dir: String, posix: String, ftype: String) {
@@ -62,7 +61,7 @@ object MountMapper {
     val (cygdrive, posix2local, reverseMap) = consumeMountMap()
     (cygdrive, posix2local, reverseMap)
   }
-  */
+   */
 
   def consumeMountMap(map: Map[String, String]): Unit = {
     def emptyMap = Map.empty[String, String]
@@ -70,7 +69,7 @@ object MountMapper {
       ("", emptyMap, emptyMap)
     } else {
       // update mutable fields
-      mountMap        = map.toList.map { case (k: String, v: String) => (k.toLowerCase -> v) }.toMap
+      mountMap = map.toList.map { case (k: String, v: String) => (k.toLowerCase -> v) }.toMap
       reverseMountMap = map.toList.map { case (k: String, v: String) => (v.toLowerCase -> k) }.toMap
       cygdrive = reverseMountMap.get("cygdrive").getOrElse("")
     }
@@ -101,7 +100,6 @@ object MountMapper {
     entries
   }
 
-
   lazy val cygdrivePrefix = reverseMountMap.get("cygdrive").getOrElse("")
 
   // this may be needed to replace `def canExist` in vastblue.os
@@ -127,7 +125,7 @@ object MountMapper {
 //  case "cygwin" => "/cygdrive"
 //  case _        => ""
 //  }
-  
+
   def fileLines(f: JFile): Seq[String] = {
     Using.resource(new BufferedReader(new FileReader(f))) { reader =>
       Iterator.continually(reader.readLine()).takeWhile(_ != null).toSeq
@@ -191,7 +189,7 @@ object MountMapper {
     if (pathstr == "/etc/fstab") {
       hook += 1
     }
-    // NOTE: /etc/fstab 
+    // NOTE: /etc/fstab
     val mountPrefix = getMounted(pathstr)
 
     val mountTarget = if (mountPrefix.isEmpty) {
@@ -201,8 +199,8 @@ object MountMapper {
         pathstr
       }
     } else {
-      val cyg: String        = _cygdrive
-      val mountpoint: String = mountPrefix.getOrElse("")
+      val cyg: String          = _cygdrive
+      val mountpoint: String   = mountPrefix.getOrElse("")
       val hasSegments: Boolean = mountpoint != "/"
       if (hasSegments && mountpoint == cyg) {
         val segments = pathstr.drop(cyg.length).split("/").dropWhile(_.isEmpty)
@@ -455,7 +453,7 @@ object MountMapper {
       driveLetters.contains(letter)
     }
   }
-  */
+   */
 
   // fileExists() solves a Windows jvm problem:
   // path.toFile.exists can be VEEERRRY slow for files on a non-existent drive (e.g., q:/).

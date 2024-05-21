@@ -1,8 +1,8 @@
 //#!/usr/bin/env -S scala
 package vastblue.demo
 
-//> using scala "3.3.1"
-//> using lib "org.vastblue::unifile:0.3.2"
+//> using scala "3.3.3"
+//> using lib "org.vastblue::unifile:0.3.3"
 
 import vastblue.unifile.*
 

@@ -9,8 +9,8 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
 class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
-  lazy val verbose   = Option(System.getenv("VERBOSE_TESTS")).nonEmpty
-  var hook: Int = 0
+  lazy val verbose = Option(System.getenv("VERBOSE_TESTS")).nonEmpty
+  var hook: Int    = 0
 
   before {
     withFileWriter(testFile) { w =>
@@ -21,12 +21,12 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
     printf("testFile: %s\n", testFile)
   }
 
-  describe ("invariants") {
+  describe("invariants") {
     // verify test invariants
-    describe ("working drive") {
-      val hd = Platform.hereDrive
+    describe("working drive") {
+      val hd                   = Platform.hereDrive
       val workingDrive: String = Platform.workingDrive.string
-      it (" should be correct for os") {
+      it(" should be correct for os") {
         if (isWindows) {
           assert(hd.equalsIgnoreCase(workingDrive))
           assert(hd.matches("[a-zA-Z]:"))
@@ -36,7 +36,7 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
       }
     }
     describe("pwd") {
-      it ("should be correct wrt rootDrive for os") {
+      it("should be correct wrt rootDrive for os") {
         val workingDrive: String = Platform.workingDrive.string
         if (isWindows) {
           val currentWorkingDrive = Platform.here.take(2).mkString
@@ -53,7 +53,7 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
     it("should correctly apply `shellRoot`") {
       if (isWinshell) {
         val etcFstab = Paths.get("/etc/fstab").posx
-        val sr = shellRoot
+        val sr       = shellRoot
         if (!etcFstab.startsWith(sr)) {
           hook += 1
         }
@@ -64,10 +64,10 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
 
   describe("Path.relpath.stdpath") {
     it("should correctly relativize Path, if below `pwd`") {
-      val p     = Paths.get(s"${_pwd.posx}/src")
+      val p            = Paths.get(s"${_pwd.posx}/src")
       val pabs: String = p.toAbsolutePath.normalize.toString.replace('\\', '/')
-      val relp  = p.relpath
-      val stdp  = relp.stdpath
+      val relp         = p.relpath
+      val stdp         = relp.stdpath
       if (pabs.length >= stdp.length) {
         hook += 1
       }
@@ -156,12 +156,12 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
           val a = expected.toLowerCase.replace('/', '\\')
           // val b = file.toString.toLowerCase
           // val c = file.localpath.toLowerCase
-          val d: String = file.dospath.toLowerCase
-          val df       = Paths.get(a)
-          val af       = Paths.get(d)
-          val sameFile = isSameFile(af, df)
+          val d: String                 = file.dospath.toLowerCase
+          val df                        = Paths.get(a)
+          val af                        = Paths.get(d)
+          val sameFile                  = isSameFile(af, df)
           def isPwd(s: String): Boolean = s == "." || s == pwdposx
-          val equivalent = a == d || a.path.abs == d.path.abs
+          val equivalent                = a == d || a.path.abs == d.path.abs
           if (sameFile && equivalent) {
             println(s"a [$a] == d [$d]")
             assert(equivalent)
@@ -243,15 +243,15 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
 
   describe("Path") {
     describe("# bare filename") {
-      it ("bare path segments are valid files") {
-        val s1 = Paths.get("s1")
+      it("bare path segments are valid files") {
+        val s1      = Paths.get("s1")
         val stdpath = s1.stdpath
         assert(stdpath.startsWith("/"))
       }
-      it ("bare filenames always have parent files") {
-        val s1 = Paths.get("s1")
+      it("bare filenames always have parent files") {
+        val s1       = Paths.get("s1")
         val p1: Path = s1.getParentPath
-        val par = s1.toAbsolutePath.parent
+        val par      = s1.toAbsolutePath.parent
         assert(par != null)
       }
     }
@@ -264,17 +264,18 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
       } else {
         Nil
       }
-      val testPaths: List[String] = windowsPaths
-      ::: List(
-        ".",
-        "src",
-        "/",
-        "/bin",
-      )
+      val testPaths: List[String] =
+        windowsPaths
+          ::: List(
+            ".",
+            "src",
+            "/",
+            "/bin",
+          )
 
       for (pathstr <- testPaths.distinct) {
         it(s"does not return null on $pathstr") {
-          val p = Paths.get(pathstr)
+          val p   = Paths.get(pathstr)
           val par = p.getParentPath
           eprintf("par [%s]\n", par.posx)
           assert(par != null)
@@ -293,7 +294,7 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
           it(s"round trip conversion should match [$matchtag]") {
             // val (k1, k2) = (f1.key, v.key)
             val sameFile = isSameFile(f1, v)
-            val bothPwd = isPwd(f1) && isPwd(v)
+            val bothPwd  = isPwd(f1) && isPwd(v)
             if (f1 != v || !sameFile) {
               printf("f1[%s]\nv[%s]\n", f1, v)
             }
@@ -326,7 +327,7 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
       describe(s"# $fname") {
         it(s"should be readable in Linux or Windows shell") {
           if (isLinux || isWinshell) {
-            val p = fname.path
+            val p            = fname.path
             val text: String = p.contentAsString.takeWhile(_ != '\n')
             System.out.printf("# %s :: [%s]\n", fname, text)
             assert(text.nonEmpty)
@@ -463,10 +464,10 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
   def isPwd(p: Path): Boolean = isPwd(p.toString)
 
   def isPwd(s: String): Boolean = s match {
-    case "" | "." =>
-      true
-    case s =>
-      s == testPwd
+  case "" | "." =>
+    true
+  case s =>
+    s == testPwd
   }
 
   /** similar to gnu 'touch <filename>' */

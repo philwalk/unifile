@@ -14,9 +14,9 @@ import java.nio.charset.Charset
 object unifile extends PathExtensions {
   type Path = java.nio.file.Path
 
-  def cygdrive: String    = Platform.cygdrive
-  def driveRoot: String   = Platform.driveRoot
-  def posixroot: String   = Platform.posixroot
+  def cygdrive: String                   = Platform.cygdrive
+  def driveRoot: String                  = Platform.driveRoot
+  def posixroot: String                  = Platform.posixroot
   def isDirectory(path: String): Boolean = Platform.isDirectory(path)
 
   def which(basename: String): String                             = Platform.which(basename)
@@ -27,18 +27,17 @@ object unifile extends PathExtensions {
 
   def prepArgs: Array[String] => Seq[String] = Platform.prepExecArgs
 
-  def driveRelative(p: Path): Boolean                             = Utils.driveRelative(p)
+  def driveRelative(p: Path): Boolean = Utils.driveRelative(p)
 
-  def hasDriveLetter(s: String): Boolean                          = Utils.hasDriveLetter(s)
+  def hasDriveLetter(s: String): Boolean = Utils.hasDriveLetter(s)
 
-  def isDriveLetter(s: String): Boolean                           = Utils.isDriveLetter(s)
+  def isDriveLetter(s: String): Boolean = Utils.isDriveLetter(s)
 
-  def isAlpha(c: Char): Boolean                                   = Platform.isAlpha(c)
+  def isAlpha(c: Char): Boolean = Platform.isAlpha(c)
 
-  def derefTilde(str: String): String                             = Utils.derefTilde(str)
+  def derefTilde(str: String): String = Utils.derefTilde(str)
 
-  def driveAndPath(filepath: String)                              = Utils.driveAndPath(filepath)
-
+  def driveAndPath(filepath: String) = Utils.driveAndPath(filepath)
 
   /*
   def normPath: String => Path = MountMapper.normPath // JPaths, except for "~", but ...
@@ -67,5 +66,5 @@ object unifile extends PathExtensions {
 
   def eachArg(args: Seq[String], usage: (String) => Nothing = ArgsUtil.defaultUsage)(custom: String => Unit): Unit =
     ArgsUtil.eachArg(args, usage)(custom)
-  */
+   */
 }

@@ -6,12 +6,12 @@ import vastblue.unifile.*
 
 object ShowPlatform {
   // display discovered aspects of the runtime environment
-  def main(args:Array[String]):Unit = {
-    for (root <- winshellBinDirs){
+  def main(args: Array[String]): Unit = {
+    for (root <- winshellBinDirs) {
       printf("available installed posix environment root: %s\n", root)
     }
     printf("whichExe     [%s]\n", whichExe)
-    for( f <- findAllInPath("bash") ){
+    for (f <- findAllInPath("bash")) {
       printf("found: [%s]\n", f)
     }
     printf("scriptName   [%s]\n", scriptName)
@@ -38,13 +38,13 @@ object ShowPlatform {
     printf("cygpath ls   [%s]\n", lspath)
   }
   lazy val prognames = Seq(
-    "bash", 
-    "cat", 
-    "find", 
-    "which", 
-    "uname", 
-    "ls", 
-    "tr", 
-    "ps", 
+    "bash",
+    "cat",
+    "find",
+    "which",
+    "uname",
+    "ls",
+    "tr",
+    "ps",
   )
 }

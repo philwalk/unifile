@@ -34,7 +34,7 @@ object Platform {
   private val foundExes: MutMap[String, String] = MutMap.empty[String, String]
 
   def DefaultCharset = defaultCharset
-  
+
   // cygdrive is mutable, to support unit testing
   // typical cygdrive values, if /etc/fstab is not customized
   //    cygwin: "/cygdrive",
@@ -62,8 +62,8 @@ object Platform {
   // drop drive letter, if present and if equal to working drive
   def standardizePath(pstr: String): String = {
     val take2: String = pstr.take(2) match {
-      case s if !s.contains(":") => ""
-      case s => s
+    case s if !s.contains(":") => ""
+    case s                     => s
     }
     val (dlPrefix: String, stdtail: String) = take2 match {
     case s if s.endsWith(":") =>
@@ -72,7 +72,7 @@ object Platform {
       ("", s)
     }
     val onCurrentDrive: Boolean = dlPrefix.toUpperCase == driveRoot
-    val bareDrive: Boolean = dlPrefix == pstr
+    val bareDrive: Boolean      = dlPrefix == pstr
 
     var std: String = if (onCurrentDrive) {
       if (bareDrive || pstr == ".") {
@@ -84,22 +84,22 @@ object Platform {
       } else {
         assert(pstr.length == 3)
         // e.g., C:/
-        val dl: String = pstr.take(2)
+        val dl: String   = pstr.take(2)
         val path: String = pstr.drop(2)
         asPosixDrive(dl, path)
       }
     } else if (bareDrive) {
       // path == driveRoot ... Windows treats this pwd
       val abspath: String = JPaths.get(pstr).abs
-      val dl: String = abspath.take(2)
-      val path: String = abspath.drop(2)
+      val dl: String      = abspath.take(2)
+      val path: String    = abspath.drop(2)
       asPosixDrive(dl, path)
     } else if (dlPrefix.nonEmpty) {
       require(pstr.length > 2, s"internal error: [$pstr]")
       // has drive letter not on driveRoot, not a bare drive
       val abspath: String = JPaths.get(pstr).abs
-      val dl: String = abspath.take(2)
-      val path: String = abspath.drop(2)
+      val dl: String      = abspath.take(2)
+      val path: String    = abspath.drop(2)
       asPosixDrive(dl, path)
     } else {
       // no drive letter, nothing to do
@@ -111,22 +111,22 @@ object Platform {
     }
     // convention: remove trailing slash unless "/"
     std match {
-      case "/"                   => "/"
-      case s if s.last == '/'    => s.init
-      case s                     => s
+    case "/"                => "/"
+    case s if s.last == '/' => s.init
+    case s                  => s
     }
   }
 
   def asPosixDrive(dl: String, path: String): String = {
-    val root = cygdrive
+    val root     = cygdrive
     val cygified = s"$root${dl.take(1).toLowerCase}$path"
     cygified
   }
-  def _userHome = sys.props("user.home")
-  def BadPath(psxStr: String) = JPaths.get(s"BadPath-$psxStr")
-  def isAlpha(c: Char): Boolean = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+  def _userHome                    = sys.props("user.home")
+  def BadPath(psxStr: String)      = JPaths.get(s"BadPath-$psxStr")
+  def isAlpha(c: Char): Boolean    = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
   def isAlphaNum(c: Char): Boolean = isAlpha(c) || isNumeric(c)
-  def isNumeric(c: Char): Boolean = c >= '0' && c <= '9'
+  def isNumeric(c: Char): Boolean  = c >= '0' && c <= '9'
   def isLegalVarName(s: String): Boolean = {
     s.matches("[a-zA-Z_$][a-zA-Z_0-9$]*")
   }
@@ -167,12 +167,12 @@ object Platform {
   def scriptName: String = Script.scriptName
   def scriptPath: Path   = Script.scriptPath
 
-  def _pwd: Path = JPaths.get(".").toAbsolutePath.normalize
+  def _pwd: Path     = JPaths.get(".").toAbsolutePath.normalize
   lazy val cwd: Path = _pwd
 
   // returns a String
   def _exec(args: String*): String = {
-    _execLines(args *).toList.mkString("")
+    _execLines(args*).toList.mkString("")
   }
 
   // returns a LazyList
@@ -374,24 +374,24 @@ object Platform {
   def _isWinshell: Boolean = _isMsys | _isCygwin | _isMingw | _isGitSdk | _isGitbash
   def _isDarwin: Boolean   = _osType == "darwin"
 
-  def _javaHome: String  = _propOrElse("java.home", JAVA_HOME)
+  def _javaHome: String = _propOrElse("java.home", JAVA_HOME)
 
   def _scalaHome: String = _propOrElse("scala.home", SCALA_HOME) match {
-    case "" =>
-      // fallback in IDEA, or if environment misconfigured
-      // (should lead to a more helpful error message)
-      "/opt/scala"
-    case s =>
-      s
+  case "" =>
+    // fallback in IDEA, or if environment misconfigured
+    // (should lead to a more helpful error message)
+    "/opt/scala"
+  case s =>
+    s
   }
 
-  def _username: String  = _propOrElse("user.name", "unknown")
-  def _userhome: String  = _propOrElse("user.home", _envOrElse("HOST", "unknown")).replace('\\', '/')
-  def _hostname: String  = _envOrElse("HOSTNAME", _envOrElse("COMPUTERNAME", _exec("hostname"))).trim
+  def _username: String = _propOrElse("user.name", "unknown")
+  def _userhome: String = _propOrElse("user.home", _envOrElse("HOST", "unknown")).replace('\\', '/')
+  def _hostname: String = _envOrElse("HOSTNAME", _envOrElse("COMPUTERNAME", _exec("hostname"))).trim
 
-  def _eprint(xs: Any*): Unit               = System.err.print("%s".format(xs *))
+  def _eprint(xs: Any*): Unit               = System.err.print("%s".format(xs*))
   def _oprintf(fmt: String, xs: Any*): Unit = System.out.printf(fmt, xs) // suppresswarnings:discarded-value
-  def _eprintf(fmt: String, xs: Any*): Unit = System.err.print(fmt.format(xs *))
+  def _eprintf(fmt: String, xs: Any*): Unit = System.err.print(fmt.format(xs*))
 
   def _propOrElse(name: String, alt: => String): String = System.getProperty(name, alt)
 
@@ -412,25 +412,25 @@ object Platform {
   }
 
   // executable Paths
-  def _bashPath: Path  = _pathCache("bash")
-
+  def _bashPath: Path = _pathCache("bash")
 
   def shell: String = _envOrElse("SHELL", ideShell)
-  
+
   def ideShell: String = {
-    if (intellij && isWinshell){
+    if (intellij && isWinshell) {
       "/usr/bin/bash"
     } else {
       "/bin/bash"
     }
   }
-  def intellij : Boolean = {
-    var intellij = try {
-      classOf[Nothing].getClassLoader.loadClass("com.intellij.rt.execution.application.AppMainV2") != null
-    } catch {
-      case e: ClassNotFoundException =>
-        false
-    }
+  def intellij: Boolean = {
+    var intellij =
+      try {
+        classOf[Nothing].getClassLoader.loadClass("com.intellij.rt.execution.application.AppMainV2") != null
+      } catch {
+        case e: ClassNotFoundException =>
+          false
+      }
     intellij
   }
 
@@ -507,7 +507,7 @@ object Platform {
   }
 
   def _exeCache(_name: String): String = {
-    val name = _name.posx.replaceAll("[.]exe$", "").replaceAll(".*/", "")
+    val name                       = _name.posx.replaceAll("[.]exe$", "").replaceAll(".*/", "")
     val pathString: Option[String] = foundExes.get(name)
     pathString match {
     case Some(pathString) =>
@@ -534,7 +534,7 @@ object Platform {
    * Stderr is handled by `func` (println by default).
    */
   def executeCmd(_cmd: Seq[String])(func: String => Unit = System.err.println): (Int, List[String]) = {
-    val cmd    = prepExecArgs(_cmd *).toArray
+    val cmd    = prepExecArgs(_cmd*).toArray
     var stdout = List[String]()
 
     val exit = Process(cmd) ! ProcessLogger(
@@ -552,7 +552,7 @@ object Platform {
   def _shellExec(str: String, env: Map[String, String]): LazyList[String] = {
     val cmd      = Seq(_exeCache("bash"), "-c", str)
     val envPairs = env.map { case (a, b) => (a, b) }.toList
-    val proc     = Process(cmd, hereJfile, envPairs *)
+    val proc     = Process(cmd, hereJfile, envPairs*)
     proc.lazyLines_!
   }
 
@@ -625,8 +625,8 @@ object Platform {
     if (_notWindows) "/"
     else {
       val bashPath: String = posx(_bashPath)
-      val guess     = bashPath.replaceFirst("(/usr)?/bin/[^/]*exe$", "")
-      val guessPath = JPaths.get(guess) // call JPaths.get here to avoid circular reference
+      val guess            = bashPath.replaceFirst("(/usr)?/bin/[^/]*exe$", "")
+      val guessPath        = JPaths.get(guess) // call JPaths.get here to avoid circular reference
       if (JFiles.isDirectory(guessPath)) {
         guess
       } else {
@@ -839,7 +839,7 @@ object Platform {
         PathBad(psxStr, BadPath(psxStr))
       }
 
-    case Seq('/', b)  =>
+    case Seq('/', b) =>
       if (isAlpha(b)) {
         val drive = s"$b:/"
         PathDrv(psxStr, JPaths.get(drive))
@@ -882,7 +882,6 @@ object Platform {
       case pt: PathBad =>
         BadPath(psxStr)
       case pt: PathPsx =>
-
         pt.p
       }
     }
@@ -948,7 +947,7 @@ object Platform {
   lazy val mountMap = {
     fstabEntries.map { (e: FsEntry) => (e.posix -> e.dir) }.toMap
   }
-  */
+   */
 
   /*
   lazy val (
@@ -976,7 +975,7 @@ object Platform {
       // readWinshellMounts
     }
   }
-  */
+   */
 
   case class FsEntry(dir: String, posix: String, ftype: String) {
     override def toString = "%-22s, %-18s, %s".format(dir, posix, ftype)
@@ -1225,7 +1224,7 @@ object Platform {
     printf("%d iterations in %9.6f seconds\n", n * 2, elapsed.toDouble / 1000.0)
   }
 
-  def _scalaPath: Path  = _pathCache("scala")
+  def _scalaPath: Path = _pathCache("scala")
 
   lazy val SCALA_HOME = {
     val sp = _scalaPath
@@ -1237,10 +1236,10 @@ object Platform {
     }
   }
 
-  def _javaPath: Path  = _pathCache("java")
+  def _javaPath: Path = _pathCache("java")
   lazy val JAVA_HOME = {
     val _javaHome: String = _javaPath.getParent.posx
-    val jh = System.getenv("JAVA_HOME")
+    val jh                = System.getenv("JAVA_HOME")
     Option(jh).getOrElse(_javaHome)
   }
 

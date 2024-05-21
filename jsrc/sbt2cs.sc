@@ -11,7 +11,7 @@ import vastblue.unifile.*
  * Example conversion from sbt dependency format to scala-cli lib format:
  *
  * from:
- *   org.vastblue             %% unifile       % 0.3.2
+ *   org.vastblue             %% unifile       % 0.3.3
  *   org.vastblue             %% pallet        % 0.10.7
  *   org.scalanlp             %% breeze-viz    % 2.1.0
  *   org.scalanlp             %% breeze        % 2.1.0
@@ -24,7 +24,7 @@ import vastblue.unifile.*
  *
  * to:
  *   //> using dep "org.vastblue::pallet::0.10.7"
- *   //> using dep "org.vastblue::unifile::0.3.2"
+ *   //> using dep "org.vastblue::unifile::0.3.3"
  *   //> using dep "org.scalanlp::breeze-viz::2.1.0"
  *   //> using dep "org.scalanlp::breeze::2.1.0"
  *   //> using dep "org.scala-lang.modules::scala-xml::2.2.0"
@@ -33,15 +33,18 @@ import vastblue.unifile.*
  *   //> using dep "dev.ludovic.netlib:blas:3.0.3"
  *   //> using dep "com.github.fommil.netlib:all:1.1.2"
  *   //> using dep "com.github.darrenjw::scala-glm::0.8"
-*/
+ */
 object Sbt2cs {
-  def usage(m: String=""): Nothing = {
-    _usage(m, Seq(
-      "[<inputFile>]",
-     s"[-sbt [<sbt-sourcefile>]   ; default: ${defaultSbtSource}",
-     s"[-cli]                     ; convert sbt deps to scala-cli format",
-     s"[-fetch]                   ; fetch and list lib jars",
-    ))
+  def usage(m: String = ""): Nothing = {
+    _usage(
+      m,
+      Seq(
+        "[<inputFile>]",
+        s"[-sbt [<sbt-sourcefile>]   ; default: ${defaultSbtSource}",
+        s"[-cli]                     ; convert sbt deps to scala-cli format",
+        s"[-fetch]                   ; fetch and list lib jars",
+      )
+    )
   }
   var (op, inputFile) = ("", "")
 
@@ -49,7 +52,7 @@ object Sbt2cs {
     try {
       parseArgs(args.toSeq)
       val entries = if (inputFile.nonEmpty && inputFile.path.isFile) {
-        val infile = inputFile.path
+        val infile  = inputFile.path
         val cleaned = extractDeps(infile)
         preProcessDeps(cleaned)
       } else {
@@ -69,9 +72,9 @@ object Sbt2cs {
         }
       }
     } catch {
-    case t: Throwable =>
-      showLimitedStack(t)
-      sys.exit(1)
+      case t: Throwable =>
+        showLimitedStack(t)
+        sys.exit(1)
     }
   }
 
@@ -85,27 +88,27 @@ com.github.fommil.netlib % all            % 1.1.2
 com.github.darrenjw      %% scala-glm     % 0.8
 org.scala-lang.modules   %% scala-swing   % 3.0.0
 net.ruippeixotog         %% scala-scraper % 3.1.1
-org.vastblue             %% unifile       % 0.3.2
+org.vastblue             %% unifile       % 0.3.3
 org.vastblue             %% pallet        % 0.10.7
 """.trim.split("[\r\n]+").toList.filter { _.nonEmpty }
 
   def parseArgs(args: Seq[String]): Unit = {
     eachArg(args, usage) {
-    case "-cli" | "-fetch" =>
-      op = thisArg
-    case "-sbt" =>
-      if (peekNext.nonEmpty && !peekNext.startsWith("-") ) {
-        inputFile = consumeNext
-        if (!inputFile.path.isFile) {
-          usage(s"not found: ${inputFile}")
+      case "-cli" | "-fetch" =>
+        op = thisArg
+      case "-sbt" =>
+        if (peekNext.nonEmpty && !peekNext.startsWith("-")) {
+          inputFile = consumeNext
+          if (!inputFile.path.isFile) {
+            usage(s"not found: ${inputFile}")
+          }
+        } else {
+          inputFile = defaultSbtSource
         }
-      } else {
-        inputFile = defaultSbtSource
-      }
-    case f if !f.startsWith("-") && f.path.isFile =>
-      inputFile = f
-    case arg =>
-      usage(s"unrecognized arg [$arg]")
+      case f if !f.startsWith("-") && f.path.isFile =>
+        inputFile = f
+      case arg =>
+        usage(s"unrecognized arg [$arg]")
     }
   }
 
@@ -134,8 +137,8 @@ org.vastblue             %% pallet        % 0.10.7
 
   case class SbtDep(_line: String) {
     def doublePercent = _line.contains("%%")
-    val line = _line.replaceAll("[,\"]+", "")
-    val fields = line.split(" *%+ *").toList
+    val line          = _line.replaceAll("[,\"]+", "")
+    val fields        = line.split(" *%+ *").toList
     val image = if (doublePercent) {
       fields.mkString("::")
     } else {
@@ -164,8 +167,8 @@ org.vastblue             %% pallet        % 0.10.7
   }
 
   def extractDeps(infile: Path): Seq[String] = {
-    val filtered = linesWithoutComments(infile)
-    var (lazyvals, lines) = filtered.partition( _.startsWith("lazy val") )
+    val filtered          = linesWithoutComments(infile)
+    var (lazyvals, lines) = filtered.partition(_.startsWith("lazy val"))
 
     var lazyvalMap = Map.empty[String, String]
     lazyvals.foreach { (line: String) =>
@@ -175,7 +178,7 @@ org.vastblue             %% pallet        % 0.10.7
     }
     val valnames = lazyvalMap.keySet
     def applyMap(line: String): String = {
-      val mapKey = valnames.find( (name: String) => line.contains(name) ).getOrElse("")
+      val mapKey = valnames.find((name: String) => line.contains(name)).getOrElse("")
       if (mapKey.nonEmpty) {
         val mapValue = lazyvalMap(mapKey)
         line.replace(mapKey, mapValue)
@@ -192,16 +195,17 @@ org.vastblue             %% pallet        % 0.10.7
   }
 
   def preProcessDeps(cleaned: Seq[String]): Seq[String] = {
-    val sorted = cleaned.sortWith ((a, b) =>
-      if (a.contains("unifile")) true else
-      if (a.contains("pallet")) true else
-      if (a.contains("vast")) true else
-      if (a.contains("apps")) true else
-      if (b.contains("unifile")) false else
-      if (b.contains("pallet")) false else
-      if (b.contains("vast")) false else
-      if (a.contains("apps")) false else
-      a > b // reverse (unifile before pallet)
+    val sorted = cleaned.sortWith((a, b) =>
+      if (a.contains("unifile")) true
+      else if (a.contains("pallet")) true
+      else if (a.contains("vast")) true
+      else if (a.contains("apps")) true
+      else if (b.contains("unifile")) false
+      else if (b.contains("pallet")) false
+      else if (b.contains("vast")) false
+      else if (a.contains("apps")) false
+      else
+        a > b // reverse (unifile before pallet)
     )
     sorted.distinct
   }
