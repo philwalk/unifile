@@ -11,7 +11,7 @@ import vastblue.unifile.*
  * Example conversion from sbt dependency format to scala-cli lib format:
  *
  * from:
- *   org.vastblue             %% unifile       % 0.3.1
+ *   org.vastblue             %% unifile       % 0.3.2
  *   org.vastblue             %% pallet        % 0.10.7
  *   org.scalanlp             %% breeze-viz    % 2.1.0
  *   org.scalanlp             %% breeze        % 2.1.0
@@ -24,7 +24,7 @@ import vastblue.unifile.*
  *
  * to:
  *   //> using dep "org.vastblue::pallet::0.10.7"
- *   //> using dep "org.vastblue::unifile::0.3.1"
+ *   //> using dep "org.vastblue::unifile::0.3.2"
  *   //> using dep "org.scalanlp::breeze-viz::2.1.0"
  *   //> using dep "org.scalanlp::breeze::2.1.0"
  *   //> using dep "org.scala-lang.modules::scala-xml::2.2.0"
@@ -85,7 +85,7 @@ com.github.fommil.netlib % all            % 1.1.2
 com.github.darrenjw      %% scala-glm     % 0.8
 org.scala-lang.modules   %% scala-swing   % 3.0.0
 net.ruippeixotog         %% scala-scraper % 3.1.1
-org.vastblue             %% unifile       % 0.3.1
+org.vastblue             %% unifile       % 0.3.2
 org.vastblue             %% pallet        % 0.10.7
 """.trim.split("[\r\n]+").toList.filter { _.nonEmpty }
 

@@ -16,7 +16,6 @@ import java.io.{FileWriter, OutputStreamWriter, PrintWriter}
 import java.security.{DigestInputStream, MessageDigest}
 import scala.jdk.CollectionConverters.*
 import scala.sys.process.*
-import java.nio.charset.Charset
 import java.time.LocalDateTime
 
 // code common to scala3 and scala2.13 versions

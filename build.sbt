@@ -1,15 +1,13 @@
 //lazy val scala213 = "2.13.13"
-lazy val scala3 = "3.4.1"
+lazy val scala3 = "3.3.1"
 lazy val scalaVer = scala3
 
 lazy val supportedScalaVersions = List(scala3)
 // lazy val supportedScalaVersions = List(scalaVer)
 
-
 javacOptions ++= Seq("-source", "11", "-target", "11")
 
 //enablePlugins(ScalaNativePlugin)
-//nativeLinkStubs := true
 
 //ThisBuild / envFileName   := "dev.env" // sbt-dotenv plugin gets build environment here
 ThisBuild / scalaVersion  := scalaVer
@@ -23,6 +21,9 @@ ThisBuild / organizationHomepage := Some(url("https://vastblue.org"))
 //cancelable in Global := true
 
 parallelExecution := false
+
+
+
 
 ThisBuild / scmInfo := Some(
   ScmInfo(
@@ -77,7 +78,10 @@ lazy val root = (project in file(".")).
 
 libraryDependencies ++= Seq(
   "org.scalatest"         %% "scalatest"       % "3.2.18" % Test,
-  "com.github.sbt"         % "junit-interface" % "0.13.3" % Test,
+//"com.github.sbt"         % "junit-interface" % "0.13.3" % Test,
+
+
+
 )
 
 /*
