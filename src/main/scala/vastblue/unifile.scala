@@ -13,7 +13,7 @@ import java.nio.charset.Charset
 
 object unifile extends PathExtensions {
   type Path = java.nio.file.Path
-
+  
   def cygdrive: String                   = Platform.cygdrive
   def driveRoot: String                  = Platform.driveRoot
   def posixroot: String                  = Platform.posixroot

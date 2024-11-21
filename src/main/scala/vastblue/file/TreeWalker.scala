@@ -38,6 +38,7 @@ object TreeWalker {
   def walkTreeFast(dir: Path, tossDirs: Set[String] = Set.empty[String], maxdepth: Int = -1)(filt: Path => Boolean): (Long, Long) = {
     class TreeWalker(examine: Path => Boolean) extends SimpleFileVisitor[Path] {
       var (visited, matched)  = (0L, 0L)
+
       def stats: (Long, Long) = (visited, matched)
 
       override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {

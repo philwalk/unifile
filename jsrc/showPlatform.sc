@@ -1,7 +1,7 @@
 #!/usr/bin/env -S scala @./atFile
 //package vastblue.demo
 
-import vastblue.Platform.{_mountMap, cygdrive2root, cygpathExe, cygpathM, etcdir, exeSuffix, findAllInPath, winshellBinDirs}
+import vastblue.Platform.{cygpathExe, cygpathM, etcdir, exeSuffix, findAllInPath, winshellBinDirs}
 import vastblue.unifile.*
 
 object ShowPlatform {
@@ -33,6 +33,7 @@ object ShowPlatform {
     printf("hostname     [%s]\n", hostname)
     printf("etcdir       [%s]\n", etcdir)
     printf("cygdrive2root[%s]\n", cygdrive2root)
+
     val ls = where("ls")
     printf("which ls     [%s]\n", ls.path.stdpath)
     val lspath = cygpathM(ls)

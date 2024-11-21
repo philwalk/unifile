@@ -202,6 +202,13 @@ trait PathExtensions {
     def lastModMinutesAgo: Double   = lastModSecondsAgo / 60.0
     def lastModHoursAgo: Double     = lastModMinutesAgo / 60.0
     def lastModDaysAgo: Double      = round(lastModHoursAgo / 24.0)
+    
+    def newerThan(other: Path): Boolean = {
+      p.isFile && other.isFile && other.lastModified > p.lastModified
+    }
+    def olderThan(other: Path): Boolean = {
+      p.isFile && other.isFile && other.lastModified < p.lastModified
+    }
 
     def lastModSeconds: Double = lastModSecondsAgo // alias
     def lastModMinutes: Double = lastModMinutesAgo // alias
