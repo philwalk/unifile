@@ -9,7 +9,7 @@ import vastblue.unifile.*
 object BashPath {
   val bashPath = where("bash").path
 
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit =
     printf("userhome: [%s]\n", userhome)
     import scala.sys.process.*
     val progname = if (isWindows) {
@@ -24,5 +24,4 @@ object BashPath {
     printf("%s\n", bashPath.toRealPath())
     printf("shellRoot: %s\n", shellRoot)
     printf("sys root:  %s\n", where("bash").posx.replaceAll("(/usr)?/bin/bash.*", ""))
-  }
 }

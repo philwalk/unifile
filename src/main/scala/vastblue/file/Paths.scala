@@ -78,8 +78,11 @@ object Paths {
   def get(_fnamestr: String): Path = {
     val _pathstr = derefTilde(_fnamestr) // replace leading tilde with sys.props("user.home")
 
-    val psxStr = _pathstr.replace('\\', '/')
-    val ok     = legalPosixFilename(psxStr, true)
+    var psxStr = _pathstr.replace('\\', '/')
+    if (isWsl && psxStr.take(2).contains(":")) {
+      psxStr = execLines("wslpath", "-u", psxStr).mkString
+    }
+    val ok = legalPosixFilename(psxStr, true)
     if (!ok) {
       hook += 1
     }

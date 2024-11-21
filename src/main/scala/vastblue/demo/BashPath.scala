@@ -7,7 +7,7 @@ package vastblue.demo
 import vastblue.unifile.*
 
 object BashPath {
-  lazy val bashPath = where("bash").path
+  val bashPath = where("bash").path
 
   def main(args: Array[String]): Unit =
     printf("userhome: [%s]\n", userhome)
