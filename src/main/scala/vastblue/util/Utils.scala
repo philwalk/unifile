@@ -11,7 +11,7 @@ import java.nio.file.{Files => JFiles, Paths => JPaths, Path => JPath}
 //import scala.util.Using
 import scala.jdk.CollectionConverters.*
 
-object Utils  {
+object Utils {
   def driveRelative(p: Path): Boolean = {
     p.toString.startsWith("/") && !p.isAbsolute
   }
@@ -37,7 +37,7 @@ object Utils  {
   }
 
   lazy val herepath: Path = JPaths.get(sys.props("user.dir"))
-  def here = herepath.toString.replace('\\', '/')
+  def here                = herepath.toString.replace('\\', '/')
 
   def driveAndPath(filepath: String) = {
     filepath match {
@@ -174,13 +174,13 @@ object Utils  {
   def scala3Version = {
     val scalaHomePath = {
       val sh = scalaHome
-      val p = sh.path
+      val p  = sh.path
       p.realpath.abs
     }
     val versionFilename = s"$scalaHomePath/VERSION"
-    val versionFile = Paths.get(versionFilename)
+    val versionFile     = Paths.get(versionFilename)
     if (versionFile.toFile.exists) {
-      scala.io.Source.fromFile(versionFile.toFile).getLines().take(1).mkString.replaceFirst("version:=","")
+      scala.io.Source.fromFile(versionFile.toFile).getLines().take(1).mkString.replaceFirst("version:=", "")
     } else {
       val sversion = scalaHomePath.replaceAll(".*/", "").trim
       sversion

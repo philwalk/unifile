@@ -6,8 +6,8 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
 class HereDataSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
-  lazy val verbose   = Option(System.getenv("VERBOSE_TESTS")).nonEmpty
-  var hook: Int = 0
+  lazy val verbose = Option(System.getenv("VERBOSE_TESTS")).nonEmpty
+  var hook: Int    = 0
 
   before {
     java.nio.file.Files.writeString(testFile1, testScriptText)
@@ -19,7 +19,7 @@ class HereDataSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
     it("should correctly read source lines following the __DATA__ marker") {
       sys.props("script.path") = testFile1.posx
       val scriptdata = vastblue.file.HereData.DATA
-      val lines = dataLines
+      val lines      = dataLines
       assert(scriptdata == lines, s"scriptData[$scriptdata]")
     }
     it("should correctly read source lines following the __END__ marker") {
@@ -34,7 +34,7 @@ class HereDataSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
     }
   }
 
-  lazy val TMP: String = sys.props("java.io.tmpdir")
+  lazy val TMP: String     = sys.props("java.io.tmpdir")
   lazy val testFile1: Path = Paths.get(s"${TMP}/dataScript1.sc")
   lazy val testFile2: Path = Paths.get(s"${TMP}/dataScript2.sc")
   lazy val testFile3: Path = Paths.get(s"${TMP}/dataScript3.sc")

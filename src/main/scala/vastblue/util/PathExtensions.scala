@@ -20,15 +20,14 @@ import scala.jdk.CollectionConverters.*
  * Unix / Linux / OSX, Windows shell environments (CYGWIN64, MINGW64,
  * MSYS2, GIT-BASH, etc.).
  */
-object PathExtensions extends PathExtensions {
-}
+object PathExtensions extends PathExtensions {}
 
 trait PathExtensions {
   private var hook = 0
   type PrintWriter = java.io.PrintWriter
   type JFile       = java.io.File
   type Path        = java.nio.file.Path
-  def Paths        = vastblue.file.Paths
+  def Paths = vastblue.file.Paths
 //def today        = now
 
   def osType: String      = Platform._osType
@@ -54,7 +53,7 @@ trait PathExtensions {
 
   def uname: (String) => String = Platform._uname
 
-  def cygpath(exename: String, args: String*): String = Platform._cygpath(exename, args: _*)
+  def cygpath(exename: String, args: String*): String = Platform._cygpath(exename, args*)
 
   def unameLong: String  = Platform._unameLong
   def unameShort: String = Platform._unameShort
@@ -63,17 +62,17 @@ trait PathExtensions {
 //  def today     = now
 //  def yesterday = now - 1.days
 
-  def eprintf(fmt: String, xs: Any*): Unit = Platform._eprintf(fmt, xs: _*)
-  def oprintf(fmt: String, xs: Any*): Unit = Platform._oprintf(fmt, xs: _*)
+  def eprintf(fmt: String, xs: Any*): Unit = Platform._eprintf(fmt, xs*)
+  def oprintf(fmt: String, xs: Any*): Unit = Platform._oprintf(fmt, xs*)
 
   def envOrEmpty: (String) => String         = Platform._envOrEmpty
   def envOrElse: (String, String) => String  = Platform._envOrElse
   def propOrEmpty: (String) => String        = Platform._propOrEmpty
   def propOrElse: (String, String) => String = Platform._propOrElse
   def where: (String) => String              = Platform._where
-  def exec(args: String*): String            = Platform._exec(args: _*)
+  def exec(args: String*): String            = Platform._exec(args*)
 
-  def execLines(args: String*): LazyList[String] = Platform._execLines(args: _*)
+  def execLines(args: String*): LazyList[String] = Platform._execLines(args*)
 
   def shellExec(str: String): LazyList[String]                           = Platform._shellExec(str)
   def shellExec(str: String, env: Map[String, String]): LazyList[String] = Platform._shellExec(str, env)
@@ -81,7 +80,7 @@ trait PathExtensions {
   def pwd: Path = Platform._pwd
 
   // executable Paths
-  def bashPath: Path  = Platform._bashPath
+  def bashPath: Path = Platform._bashPath
 //  def catPath: Path   = Platform._catPath
 //  def findPath: Path  = Platform._findPath
 //  def whichPath: Path = Platform._whichPath
@@ -110,12 +109,12 @@ trait PathExtensions {
   def consumeArgs(n: Int): Seq[String] = ArgsUtil.consumeArgs(n)
 
   def _usage(m: String, info: Seq[String]): Nothing = ArgsUtil.Usage.usage(m, info)
-  
-  //def scalaHome: String = Utils.scalaHome
+
+  // def scalaHome: String = Utils.scalaHome
 
   def scala3Version: String = Utils.scala3Version
 
-  def eachArg: (Seq[String], String => Nothing) => (String => Unit) => Unit = ArgsUtil.eachArg _
+  def eachArg: (Seq[String], String => Nothing) => (String => Unit) => Unit = ArgsUtil.eachArg
 
   def walkTreeFast(p: Path, tossDirs: Set[String], maxdepth: Int = -1)(filt: Path => Boolean): (Long, Long) = {
     vastblue.file.TreeWalker.walkTreeFast(p, tossDirs, maxdepth)(filt)
@@ -158,14 +157,14 @@ trait PathExtensions {
   }
 
   extension (s: String) {
-    def toPath: Path    = Paths.get(s)
-    def path: Path      = Paths.get(s)
-    def absPath: Path   = s.toPath.toAbsolutePath.normalize
-    def jpath: Path     = JPaths.get(s)
-    def toFile: JFile   = Paths.get(s).toFile
-    def file: JFile     = Paths.get(s).toFile
-    def posx: String    = s.replace('\\', '/')
-    def locl: String    = posx.replace('/', JFile.separatorChar)
+    def toPath: Path  = Paths.get(s)
+    def path: Path    = Paths.get(s)
+    def absPath: Path = s.toPath.toAbsolutePath.normalize
+    def jpath: Path   = JPaths.get(s)
+    def toFile: JFile = Paths.get(s).toFile
+    def file: JFile   = Paths.get(s).toFile
+    def posx: String  = s.replace('\\', '/')
+    def locl: String  = posx.replace('/', JFile.separatorChar)
 
     def dropSuffix: String = if (s.indexOf('.') <= 0) s else s.reverse.dropWhile(_ != '.').drop(1).reverse
   }
@@ -178,18 +177,18 @@ trait PathExtensions {
     def abspath: Path      = p.toAbsolutePath.normalize
     def abs: String        = p.toAbsolutePath.normalize.toString.posx
     def posx: String = p.normalize.toString match {
-      case "." | "" => "."
-      case ".." => ".."
-      case s => s.posx
+    case "." | "" => "."
+    case ".."     => ".."
+    case s        => s.posx
     }
-    def locl: String       = p.posx.replace('/', JFile.separatorChar)
+    def locl: String = p.posx.replace('/', JFile.separatorChar)
 
-    def text: String              = p.contentAsString
-    def pathFields                = p.iterator.asScala.toList
-    def reversePath: String       = pathFields.reverse.mkString("/")
+    def text: String        = p.contentAsString
+    def pathFields          = p.iterator.asScala.toList
+    def reversePath: String = pathFields.reverse.mkString("/")
 
-    //def lastModifiedTime        = whenModified(p.toFile)
-    def lastModified: Long        = p.toFile.lastModified
+    // def lastModifiedTime        = whenModified(p.toFile)
+    def lastModified: Long = p.toFile.lastModified
 
     def newerThan(other: Path): Boolean = {
       p.isFile && other.isFile && other.lastModified > p.lastModified
@@ -198,21 +197,21 @@ trait PathExtensions {
       p.isFile && other.isFile && other.lastModified < p.lastModified
     }
 
-    def lastModifiedMillisAgo: Long  = System.currentTimeMillis - p.toFile.lastModified
-    def lastModSecondsAgo: Double    = (lastModifiedMillisAgo/1000L).toDouble
-    def lastModMinutesAgo: Double    = lastModSecondsAgo / 60.0
-    def lastModHoursAgo: Double      = lastModMinutesAgo / 60.0
-    def lastModDaysAgo: Double       = round(lastModHoursAgo / 24.0)
+    def lastModifiedMillisAgo: Long = System.currentTimeMillis - p.toFile.lastModified
+    def lastModSecondsAgo: Double   = (lastModifiedMillisAgo / 1000L).toDouble
+    def lastModMinutesAgo: Double   = lastModSecondsAgo / 60.0
+    def lastModHoursAgo: Double     = lastModMinutesAgo / 60.0
+    def lastModDaysAgo: Double      = round(lastModHoursAgo / 24.0)
 
-    def lastModSeconds: Double    = lastModSecondsAgo // alias
-    def lastModMinutes: Double    = lastModMinutesAgo // alias
-    def lastModHours: Double      = lastModHoursAgo   // alias
-    def lastModDays: Double       = lastModDaysAgo    // alias
+    def lastModSeconds: Double = lastModSecondsAgo // alias
+    def lastModMinutes: Double = lastModMinutesAgo // alias
+    def lastModHours: Double   = lastModHoursAgo   // alias
+    def lastModDays: Double    = lastModDaysAgo    // alias
 
     def lastModifiedYMD: String = {
       def lastModified = p.toFile.lastModified
       val date         = new java.util.Date(lastModified)
-      val ymdHms = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+      val ymdHms       = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
       ymdHms.format(date)
     }
 
@@ -234,10 +233,9 @@ trait PathExtensions {
     def canRead: Boolean    = p.toFile.canRead
     def canExecute: Boolean = p.toFile.canExecute
 
-
-    //def weekDay: java.time.DayOfWeek = {
+    // def weekDay: java.time.DayOfWeek = {
     //  p.lastModifiedTime.getDayOfWeek
-    //}
+    // }
 
     def subdirs: Seq[Path]  = p.paths.filter { _.isDirectory }
     def subfiles: Seq[Path] = p.paths.filter { _.isFile }
@@ -263,37 +261,37 @@ trait PathExtensions {
       dir.toFile.isDirectory
     }
 
-    def stdpath: String    = Platform.standardizePath(p.toAbsolutePath.normalize.toString.replace('\\', '/'))
-    def dospath: String    = localpath.replace('/', '\\')
+    def stdpath: String = Platform.standardizePath(p.toAbsolutePath.normalize.toString.replace('\\', '/'))
+    def dospath: String = localpath.replace('/', '\\')
 
     def relpath: Path        = Util.relativize(p) // Platform?
     def relativePath: String = relpath.toString.posx
-   
+
     // none of these extension methods are overrides of JFile or Path
     // null is never a return value
-    def parentPath: Path    = getParentPath
-    def parent: Path        = getParentPath
-    def parentFile: JFile   = getParentPath.toFile
+    def parentPath: Path  = getParentPath
+    def parent: Path      = getParentPath
+    def parentFile: JFile = getParentPath.toFile
     def getParentPath: Path = {
-      val abs = p.toAbsolutePath
+      val abs  = p.toAbsolutePath
       val norm = abs.normalize
       norm.getParent match {
-        case null =>
-          Paths.get("/") // never return null
-        case par =>
-          par
+      case null =>
+        Paths.get("/") // never return null
+      case par =>
+        par
       }
     }
     // avoid overriding JFile.getParent() or JFile.getParentFile()
     // or java.nio.file.Path.getParent()
 
-    def noDrive: String      = p.posx match {
+    def noDrive: String = p.posx match {
     case s if s.take(2).endsWith(":") => s.drop(2)
     case s                            => s
     }
     def toFile: JFile = p.toFile
     def file: JFile   = p.toFile
-    
+
     def getContentAsString(charset: Charset = DefaultCharset): String = {
       val posx = p.posx
       if (posx.startsWith("/proc")) {
@@ -306,7 +304,7 @@ trait PathExtensions {
 
     def contentAsString: String = getContentAsString()
 
-    def length: Long  = p.toFile.length
+    def length: Long = p.toFile.length
 
     def isDirectory: Boolean = p.toFile.isDirectory
     def isFile: Boolean      = p.toFile.isFile
@@ -320,11 +318,10 @@ trait PathExtensions {
     def dotsuffix: String         = p.toFile.dotsuffix
     def lcsuffix: String          = suffix.toLowerCase
 
-
     // if p.files is called on a non-Directory, it returns Seq(p)
     def files: Seq[JFile]  = p.toFile.files
     def paths: Seq[Path]   = p.toFile.files.map { _.toPath }
-    def lines: Seq[String] =  Platform.readLines(p).toSeq // JFiles.readAllLines(p).asScala.toSeq
+    def lines: Seq[String] = Platform.readLines(p).toSeq // JFiles.readAllLines(p).asScala.toSeq
 
     def delete() = p.toFile.delete()
 
@@ -353,18 +350,18 @@ trait PathExtensions {
       }
     }
 
-    def realPath: Path         = toRealPath(p)
+    def realPath: Path = toRealPath(p)
     def realpathLs: Path = { // ask ls what symlink references
       Platform._exec("ls", "-l", p.posx).split("\\s+->\\s+").toList match {
       case a :: b :: Nil => b.path
       case _             => p
       }
     }
-    def cksum: Long          = vastblue.file.Util.cksum(p)
-    def segments: Seq[Path]  = Utils.segments(p)
-    def canExist: Boolean    = Platform.canExist(p)
+    def cksum: Long         = vastblue.file.Util.cksum(p)
+    def segments: Seq[Path] = Utils.segments(p)
+    def canExist: Boolean   = Platform.canExist(p)
 
- // def localpath: String = posx.replace('/', JFile.separatorChar)
+    // def localpath: String = posx.replace('/', JFile.separatorChar)
     def localpath: String = osType match {
     case "windows" =>
       val pstr = p.toString.posx
@@ -386,7 +383,6 @@ trait PathExtensions {
       p.toString.posx
     }
 
-  
     def dateSuffix: String = {
       lcbasename match {
       case Util.DatePattern1(_, yyyymmdd, _) =>
@@ -397,14 +393,14 @@ trait PathExtensions {
         ""
       }
     }
-    
+
     // useful for examining shebang line
     def firstline: String = Util.readLines(p).take(1).mkString("")
-    def cksumNe: Long  = Util.cksumNe(p)
-    def md5: String    = Util.fileChecksum(p, algorithm = "MD5")
-    def sha256: String = Util.fileChecksum(p, algorithm = "SHA-256")
+    def cksumNe: Long     = Util.cksumNe(p)
+    def md5: String       = Util.fileChecksum(p, algorithm = "MD5")
+    def sha256: String    = Util.fileChecksum(p, algorithm = "SHA-256")
 
-    def guessEncoding: String   = guessCharset.toString
+    def guessEncoding: String = guessCharset.toString
     def guessCharset: Charset = {
       val (charset, _) = vastblue.file.Util.charsetAndContent(p)
       charset
@@ -417,7 +413,7 @@ trait PathExtensions {
       Util.withPathWriter(p, charsetName, append)(func)
     }
   }
-  
+
   extension (f: JFile) {
     def path: Path      = f.toPath
     def realfile: JFile = path.realpath.toFile
@@ -427,8 +423,8 @@ trait PathExtensions {
     def abspath: Path   = f.toPath.toAbsolutePath.normalize
     def abs: String     = f.toPath.toAbsolutePath.posx
 
-    def basename: String          = f.getName.dropSuffix
-    def lcbasename: String        = basename.toLowerCase
+    def basename: String   = f.getName.dropSuffix
+    def lcbasename: String = basename.toLowerCase
 
     def isDirectory: Boolean    = f.isDirectory
     def isFile: Boolean         = f.isFile
@@ -448,19 +444,19 @@ trait PathExtensions {
     // or java.nio.file.Path.getParent()
 
     def byteArray: Array[Byte] = JFiles.readAllBytes(f.toPath)
-    def files: Seq[JFile] = if (f.isDirectory) f.listFiles.toSeq else Nil
-    def paths: Seq[Path] = f.listFiles.toSeq.map { _.toPath }
+    def files: Seq[JFile]      = if (f.isDirectory) f.listFiles.toSeq else Nil
+    def paths: Seq[Path]       = f.listFiles.toSeq.map { _.toPath }
 
     def filesTree: Seq[JFile] = Util.filesTree(f)(dummyFilter)
-    def pathsTree: Seq[Path] = Util.filesTree(f)(dummyFilter).map { _.toPath }
+    def pathsTree: Seq[Path]  = Util.filesTree(f)(dummyFilter).map { _.toPath }
 
     def lines: Seq[String] = readLines(f.toPath).toSeq
     def canExist: Boolean  = Platform.canExist(f.toPath)
 
     // comparable to Some(dotsuffix):
     def extension: Option[String] = f.getName.reverse match {
-      case s if s.contains(".") && !s.endsWith(".") => Some(s.reverse.dropWhile(_!='.'))
-      case s => None
+    case s if s.contains(".") && !s.endsWith(".") => Some(s.reverse.dropWhile(_ != '.'))
+    case s                                        => None
     }
     def renameTo(s: String): Boolean = renameTo(s.path)
     def renameTo(alt: Path): Boolean = {
@@ -469,23 +465,23 @@ trait PathExtensions {
 
     def diff(other: JFile): Seq[String] = Util.diffExec(f, other)
 
-    def cksumNe: Long  = Util.cksumNe(f.toPath)
-    def md5: String    = Util.fileChecksum(f.toPath, algorithm = "MD5")
-    def sha256: String = Util.fileChecksum(f.toPath, algorithm = "SHA-256")
+    def cksumNe: Long     = Util.cksumNe(f.toPath)
+    def md5: String       = Util.fileChecksum(f.toPath, algorithm = "MD5")
+    def sha256: String    = Util.fileChecksum(f.toPath, algorithm = "SHA-256")
     def isEmpty: Boolean  = f.length == 0
     def nonEmpty: Boolean = f.length != 0
 
-    def relpath: Path             = f.toPath.relpath
-    def stdpath: String           = Platform.standardizePath(f.toPath.toAbsolutePath.normalize.posx)
-    def lastModifiedYMD: String   = f.path.lastModifiedYMD
+    def relpath: Path           = f.toPath.relpath
+    def stdpath: String         = Platform.standardizePath(f.toPath.toAbsolutePath.normalize.posx)
+    def lastModifiedYMD: String = f.path.lastModifiedYMD
 
     def ls: Seq[JFile] = f match {
     case f if f.isDirectory => f.listFiles.toSeq
-    case f => Seq(f)
+    case f                  => Seq(f)
     }
 
-    def subdirs: Seq[Path] = f.toPath.subdirs
-    def subfiles: Seq[Path] = f.toPath.subfiles
+    def subdirs: Seq[Path]            = f.toPath.subdirs
+    def subfiles: Seq[Path]           = f.toPath.subfiles
     def linesAnyEncoding: Seq[String] = Util.readLinesAnyEncoding(f.toPath)
   }
 }

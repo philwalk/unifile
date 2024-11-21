@@ -12,7 +12,7 @@ import org.scalatest.matchers.should.Matchers
 
 class RootRelativeTest extends AnyFunSpec with Matchers with BeforeAndAfter {
   private var hook = 0
-  val verbose = Option(System.getenv("VERBOSE_TESTS")).nonEmpty
+  val verbose      = Option(System.getenv("VERBOSE_TESTS")).nonEmpty
 
   // current working directory is fixed at JVM startup time
   val workingDir = Paths.get(".").toAbsolutePath

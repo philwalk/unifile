@@ -14,7 +14,7 @@ import scala.sys.process.*
 import scala.jdk.CollectionConverters.*
 
 object ProcfsPaths {
-  private var hook = 0
+  private var hook       = 0
   def hasProcfs: Boolean = _isLinux || _isWinshell
 
   def rootSeg(s: String): String = {

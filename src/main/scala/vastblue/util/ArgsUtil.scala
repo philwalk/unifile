@@ -19,7 +19,7 @@ object ArgsUtil {
   case _    => true
   }
 
-  var pusage: String => Nothing = defaultUsage _
+  var pusage: String => Nothing = defaultUsage
   var pargs: Seq[String]        = Seq.empty[String]
   var pindex: Int               = 0
   var skips: Int                = 0
@@ -133,7 +133,7 @@ object ArgsUtil {
     }
   }
 
-  def _usage: (String, Seq[String]) => Nothing = Usage.usage _
+  def _usage: (String, Seq[String]) => Nothing = Usage.usage
   object Usage {
     def usage(msg: String, info: Seq[String]): Nothing = {
       if (msg != "") System.err.printf("%s\n", msg)

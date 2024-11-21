@@ -8,11 +8,11 @@ import vastblue.util.PathExtensions.*
 
 object Script {
   private lazy val verby: String = Option(System.getenv("SCRIPT_VERBY")).getOrElse("")
-  private def verbyFlag = verby.nonEmpty
+  private def verbyFlag          = verby.nonEmpty
 
   def searchStackTrace(e: Exception = new Exception()): StackTraceElement = {
     val stackList: List[StackTraceElement] = e.getStackTrace.toList
-    val relevant: StackTraceElement = stackList.dropWhile( (e: StackTraceElement) =>
+    val relevant: StackTraceElement = stackList.dropWhile((e: StackTraceElement) =>
       val s = e.toString
       s.contains("unifile.") ||
       s.contains("vastblue.Script.scala") ||
@@ -22,10 +22,10 @@ object Script {
       s.contains("scalatest") ||
       s.contains("junit")
     ).take(1) match {
-      case Nil =>
-        stackList.last
-      case head :: tail =>
-        head
+    case Nil =>
+      stackList.last
+    case head :: tail =>
+      head
     }
     relevant
   }
@@ -49,22 +49,22 @@ object Script {
       _scriptProp.filePath
     }
   }
-  def scriptName: String  = _scriptPath match {
+  def scriptName: String = _scriptPath match {
   case "" | "MainArgs.scala" | "mainargs.scala" | "Script.scala" =>
     scriptProp().filePath.posx
   case name =>
     name.posx
   }
-  extension(e: StackTraceElement) {
+  extension (e: StackTraceElement) {
     def filePath: String = {
-      val fname = e.getFileName
+      val fname      = e.getFileName
       val class2path = e.getClassName.replace('.', '/')
       class2path.replaceFirst("[^/]*$", fname)
     }
   }
   def _scriptProp: StackTraceElement = Script.searchStackTrace(new Exception())
-  def stackElementFilePath: String = _scriptProp.filePath
-  def stackElementClassName: String = _scriptProp.getClassName
+  def stackElementFilePath: String   = _scriptProp.filePath
+  def stackElementClassName: String  = _scriptProp.getClassName
 
   // TODO: this works if running from a script, but need to gracefully do something
   // otherwise.  If executing from a jar file, read manifest to get main class
@@ -75,7 +75,7 @@ object Script {
   }
 
   def scalaScriptFile: Path = scriptPath
-  def scriptFile = scalaScriptFile
+  def scriptFile            = scalaScriptFile
 
   // scriptName, or legal fully qualified class name (must include package)
   def validScriptOrClassName(s: String): Boolean = {
@@ -96,13 +96,13 @@ object Script {
     System.err.print(text)
   }
   def _eprintf(fmt: String, xs: Any*): Unit = {
-    System.err.print(fmt.format(xs: _*))
+    System.err.print(fmt.format(xs*))
   }
   def _eprint(xs: Any*): Unit = {
-    System.err.print("%s".format(xs: _*))
+    System.err.print("%s".format(xs*))
   }
 
-  def getClassName(claz: Class[_]): String = {
+  def getClassName(claz: Class[?]): String = {
     claz.getName.stripSuffix("$").replaceAll(""".*[^a-zA-Z_0-9]""", "") // delete thru the last non-identifier char
   }
   def getClassName(main: AnyRef): String = {

@@ -2,7 +2,7 @@ package vastblue.file
 
 import vastblue.file.MountMapper.cygdrive
 import vastblue.Platform
-import vastblue.Platform.{envPath, exeSuffix, shellDrive, legalPosixFilename }
+import vastblue.Platform.{envPath, exeSuffix, shellDrive, legalPosixFilename}
 import vastblue.file.Util.notWindows
 import vastblue.file.ProcfsPaths.*
 import vastblue.util.PathExtensions.*
@@ -19,8 +19,8 @@ import scala.jdk.CollectionConverters.*
  * On Windows:
  *   + translate posix paths to Windows equivalent, if necessary
  * On non-Windows platforms:
- *   + forwards request to `java.nio.file.Paths.get()`  
- *   + forwards request to `java.nio.file.Paths.get()`  
+ *   + forwards request to `java.nio.file.Paths.get()`
+ *   + forwards request to `java.nio.file.Paths.get()`
  */
 object Paths {
   private var hook = 0
@@ -78,7 +78,10 @@ object Paths {
   def get(_fnamestr: String): Path = {
     val _pathstr = derefTilde(_fnamestr) // replace leading tilde with sys.props("user.home")
 
-    val psxStr = _pathstr.replace('\\', '/')
+    var psxStr = _pathstr.replace('\\', '/')
+    if (isWsl && psxStr.take(2).contains(":")) {
+      psxStr = execLines("wslpath", "-u", psxStr).mkString
+    }
     val ok = legalPosixFilename(psxStr, true)
     if (!ok) {
       hook += 1
@@ -90,7 +93,7 @@ object Paths {
         val rel = psxStr.replace(pwdposx, ".") // convert to "./" format
         JPaths.get(rel)
       } else if (psxStr.isEmpty || psxStr.startsWith(".")) {
-        JPaths.get(psxStr) // includes ".", "..", "" 
+        JPaths.get(psxStr) // includes ".", "..", ""
       } else if (notWindows || hasDriveLetter(psxStr) || psxStr.matches("/proc(/.*)?")) {
         JPaths.get(psxStr)
       } else {

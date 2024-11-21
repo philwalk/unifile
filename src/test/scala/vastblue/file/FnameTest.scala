@@ -13,11 +13,11 @@ class FnameTest extends AnyFunSpec with Matchers with BeforeAndAfter with PathEx
 
   def nativePathString(p: Path): String = {
     p.normalize.toString match {
-      case "" | "." => "."
-      case s => s.replace('\\', '/')
+    case "" | "." => "."
+    case s        => s.replace('\\', '/')
     }
   }
-  
+
   lazy val TMP = {
     val gdir = Paths.get("/g")
     gdir.isDirectory && gdir.paths.nonEmpty match {

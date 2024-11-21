@@ -1,13 +1,13 @@
 //#!/usr/bin/env -S scala
 package vastblue.demo
 
-//> using scala "3.3.1"
-//> using lib "org.vastblue::unifile:0.3.1"
+//> using scala "3.3.3"
+//> using lib "org.vastblue::unifile:0.3.3"
 
 import vastblue.unifile.*
 
 object BashPath {
-  lazy val bashPath = where("bash").path
+  val bashPath = where("bash").path
 
   def main(args: Array[String]): Unit =
     printf("userhome: [%s]\n", userhome)

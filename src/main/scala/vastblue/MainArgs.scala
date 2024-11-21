@@ -40,7 +40,7 @@ object MainArgs {
       // new Exception().printStackTrace()
     }
     val e: StackTraceElement = Script._scriptProp
-    val argv = (e.filePath :: _args.toList).toArray.toSeq
+    val argv                 = (e.filePath :: _args.toList).toArray.toSeq
     val validArgs = if (!isWindows || shell.isEmpty) {
       argv
     } else {
@@ -91,8 +91,8 @@ object MainArgs {
 
   private val scriptArgz: Seq[String] = {
     val e: StackTraceElement = scriptProp(new Exception)
-    val sprop = e.filePath
-    val sjc: Array[String] = sunJavaCommand.split(" ")
+    val sprop                = e.filePath
+    val sjc: Array[String]   = sunJavaCommand.split(" ")
     var argz: Array[String] = {
       val list = sjc.dropWhile { (s: String) =>
         !s.endsWith(sprop) && !validScriptOrClassName(s)

@@ -568,14 +568,15 @@ object Util {
   * Create new File with filename based on this file, but
   * with field appended to the basename, before the suffix.
   */
-  def withBasenameSuffix(p: Path, str: String, _newBasename: String = ""): Path = {
-    val newBasename = _newBasename match {
-    case ""  => p.toFile.getName
-    case str => str
-    }
-    if (newBasename.endsWith(str)) sys.error(s"[${posx(p)}] already has pre-suffix [$str]")
-    val dotsuffix: String = "." + suffix(p)
-    Paths.get(p.toFile.getParent, s"$newBasename$str$dotsuffix")
+  def withBasenameSuffix(p: Path, tag: String = "-", numstr: String): Path = {
+    def tagregex: String = tag+"[0-9]+$"
+    val newBasename = p.toFile.getName.
+      replaceAll("[.][^.]+$", "").
+      replaceAll(tagregex, "") // remove tag
+
+    // remove suffix, if present
+    val sfx: String = suffix(p)
+    Paths.get(p.toFile.getParent, s"$newBasename$numstr.$sfx")
   }
 
   /**
@@ -589,10 +590,12 @@ object Util {
     var candidateFile: Path = p
 
     var n = 0
-    while (n < limit && candidateFile.toFile.exists) {
+    var firstPass = false
+    while (n < limit && (firstPass || candidateFile.toFile.exists)) {
       n += 1
+      firstPass = false // emulate a do-while loop
       val numstr = fmt.format(n)
-      candidateFile = withBasenameSuffix(p, numstr)
+      candidateFile = withBasenameSuffix(p, tag, numstr)
     }
     if (candidateFile.toFile.exists) {
       throw new RuntimeException("limit [%d] reached w/out success".format(limit))
@@ -858,8 +861,16 @@ object Util {
 
 //  import vastblue.time.TimeDate.*
 
+  private def fix(s: String) = s.take(4)+"-"+s.drop(4).take(2)+"-"+s.drop(6)
+
   private[vastblue] def _quikDate(s: String): LocalDateTime = {
-    _quikDateTime(s.take(10))
+    assert(s.length >= 8, s"ymd[$s]")
+    val ymdtest = s.take(8)
+    val ymd = if ymdtest.matches("[0-9]+") then
+      fix(ymdtest)
+    else
+      s.take(10)
+    _quikDateTime(ymd)
   }
 
   private[vastblue] def _quikDateTime(s: String): LocalDateTime = {
