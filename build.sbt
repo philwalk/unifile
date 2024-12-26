@@ -1,5 +1,5 @@
 //lazy val scala213 = "2.13.14"
-lazy val scala3   = "3.4.2"
+lazy val scala3   = "3.4.3"
 lazy val scalaVer = scala3
 
 lazy val supportedScalaVersions = List(scala3)
@@ -13,7 +13,7 @@ javacOptions ++= Seq("-source", "11", "-target", "11")
 //ThisBuild / envFileName   := "dev.env" // sbt-dotenv plugin gets build environment here
 ThisBuild / scalaVersion  := scalaVer
 
-ThisBuild / version       := "0.3.5"
+ThisBuild / version       := "0.3.6"
 ThisBuild / versionScheme := Some("semver-spec")
 
 ThisBuild / organization         := "org.vastblue"
@@ -125,21 +125,20 @@ case _ =>
   Nil
 })
 
+// key identifier, otherwise this field is ignored; passwords supplied by pinentry
+credentials += Credentials(
+  "GnuPG Key ID",
+  "gpg",
+  "1CF370113B7EE5A327DD25E7B5D88C95FC9CB6CA", // key identifier
+  "ignored",
+)
+
+credentials += Credentials(Path.userHome / ".sonatype_credentials") 
+
 // Set this to the same value set as your credential files host.
 sonatypeCredentialHost := "s01.oss.sonatype.org"
 // Set this to the repository to publish to using `s01.oss.sonatype.org`
 // for accounts created after Feb. 2021.
 sonatypeRepository := "https://s01.oss.sonatype.org/service/local"
 
-// key identifier, otherwise this field is ignored; passwords supplied by pinentry
-
-credentials += Credentials(
-  "GnuPG Key ID",
-  "gpg",
-  "1CF370113B7EE5A327DD25E7B5D88C95FC9CB6CA", /* key identifier */
-  "ignored",
-)
-
-credentials += Credentials(Path.userHome / ".sonatype_credentials") 
-//credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credentials") 
 

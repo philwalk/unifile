@@ -1,4 +1,4 @@
-#!/usr/bin/env -S scala -cp target/scala-3.3.3/classes
+#!/usr/bin/env -S scala -cp target/scala-3.4.2/classes
 //package vastblue.demo
 
 object Hostname {

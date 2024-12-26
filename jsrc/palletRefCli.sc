@@ -1,7 +1,8 @@
 #!/usr/bin/env -S scala-cli shebang
 //package vastblue.demo
-//> using scala "3.3.3"
-//> using dep "org.vastblue::unifile:0.3.3"
+
+//> using scala "3.4.3"
+//> using dep "org.vastblue::unifile:0.3.6"
 
 
 import vastblue.unifile.*
