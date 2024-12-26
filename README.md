@@ -1,5 +1,7 @@
 # unifile
 
++ Provides a `cygwin-compatible` version of `java.nio.Paths`
++ `Paths.get()` understands `posix` and `Windows` paths, returns a `java.nio.file.Path` object
 + Expressive, Platform-portable scala library.
 + Simplify system administration tasks.
 + no 3rd party libraries, 100% scala.
@@ -69,7 +71,7 @@ This example might surprise developers working in a `Windows` posix shell, since
 ```scala
 #!/usr/bin/env -S scala -cli shebang
 
-//> using scala "3.4.2"
+//> using scala "3.4.3"
 //> using lib "org.vastblue::unifile::0.3.6"
 
 import vastblue.unifile.Paths
@@ -115,7 +117,7 @@ Things that maximize the odds of your script running on another system:
     * represent paths internally with forward slashes and avoid drive letters
     * drive letter not needed for paths on the current working drive (often C:)
     * to access disks other than the working drive, mount them via `/etc/fstab`
-    * `vastblue.Paths.get()` is can parse both `posix` and `Windows` filesystem paths
+    * `vastblue.Paths.get()` can parse both `posix` and `Windows` filesystem paths
   * don't assume path strings use `java.nio.File.separator` or `sys.props("line.separator")`
   * use them to format output, as appropriate, never to parse path strings
   * split strings with `"(\r)?\n"` rather than `line.separator`
