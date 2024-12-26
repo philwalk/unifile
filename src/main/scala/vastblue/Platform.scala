@@ -858,7 +858,8 @@ object Platform {
   }
 
   def cygPath(psxStr: String): String = {
-    _exec("cygpath", "-m", psxStr)
+    val cygpath = _where("cygpath")
+    _exec(cygpath, "-m", psxStr)
   }
 
   /*

@@ -1,7 +1,7 @@
 #!/usr/bin/env -S scala @./atFile
 //package vastblue.demo
 
-import vastblue.Platform.{cygpathExe, cygpathM, etcdir, exeSuffix, findAllInPath, winshellBinDirs}
+import vastblue.Platform.{_mountMap, cygdrive2root, cygpathExe, cygpathM, etcdir, exeSuffix, findAllInPath, winshellBinDirs}
 import vastblue.unifile.*
 
 object ShowPlatform {
