@@ -1,7 +1,7 @@
 //#!/usr/bin/env -S scala
 //package vastblue.demo
 
-//> using lib "org.vastblue::unifile:0.3.6"
+//> using lib "org.vastblue::unifile:0.3.7"
 import vastblue.unifile.*
 
 object UnameGreeting {
