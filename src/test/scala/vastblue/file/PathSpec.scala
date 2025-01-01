@@ -49,6 +49,14 @@ class PathSpec extends AnyFunSpec with Matchers with BeforeAndAfter {
     }
   }
 
+  describe("Path.suffix") {
+    it("should correctly derive dotsuffix") {
+      val p = ".ue.scala.swp".path 
+      val expected = ".swp"
+      val dsfx = p.dotsuffix
+      assert(dsfx == expected)
+    }
+  }
   describe("Paths.get") {
     it("should correctly apply `shellRoot`") {
       if (isWinshell) {
