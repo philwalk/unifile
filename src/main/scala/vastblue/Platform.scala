@@ -177,7 +177,14 @@ object Platform {
   def _execLines(args: String*): LazyList[String] = {
     // depends on PATH
     require(args.nonEmpty)
-    Process(args).lazyLines_!
+    val arg0: String = args(0).replace('\\', '/')
+    val argz: Seq[String] = if (arg0.contains("/")) {
+      args
+    } else {
+      val args0 = where(arg0)
+      arg0 :: args.drop(1).toList
+    }
+    Process(argz).lazyLines_!
   }
   def _notWindows: Boolean = java.io.File.separator == "/"
   def _isWindows: Boolean  = !_notWindows

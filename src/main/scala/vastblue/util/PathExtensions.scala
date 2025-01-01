@@ -295,7 +295,8 @@ trait PathExtensions {
     def getContentAsString(charset: Charset = DefaultCharset): String = {
       val posx = p.posx
       if (posx.startsWith("/proc")) {
-        _exec("cat", posx)
+        val catExe = where("cat")
+        _exec(catExe, posx)
       } else {
         // conversion to String justifies discarding utf8 BOM, if present
         new String(byteArrayNoBom, charset)
@@ -315,7 +316,7 @@ trait PathExtensions {
 
     def extension: Option[String] = p.toFile.extension
     def suffix: String            = dotsuffix.dropWhile((c: Char) => c == '.')
-    def dotsuffix: String         = p.toFile.dotsuffix
+    def dotsuffix: String         = vastblue.file.Util.dotsuffix(p)
     def lcsuffix: String          = suffix.toLowerCase
 
     // if p.files is called on a non-Directory, it returns Seq(p)
@@ -430,7 +431,7 @@ trait PathExtensions {
     def isFile: Boolean         = f.isFile
     def exists: Boolean         = f.exists
     def isSymbolicLink: Boolean = JFiles.isSymbolicLink(f.toPath)
-    def dotsuffix: String       = f.name.drop(f.basename.length) // .txt, etc.
+    def dotsuffix: String       = f.toPath.dotsuffix
     def suffix: String          = dotsuffix.dropWhile((c: Char) => c == '.')
     def lcsuffix: String        = suffix.toLowerCase
 
