@@ -178,11 +178,11 @@ object Platform {
     // depends on PATH
     require(args.nonEmpty)
     val arg0: String = args(0).replace('\\', '/')
-    val argz: Seq[String] = if (arg0.contains("/")) {
-      args
-    } else {
-      val args0 = where(arg0)
+    val argz: Seq[String] = if (isWindows && !arg0.contains("/")) {
+      val args0 = where(arg0)  // get full path
       arg0 :: args.drop(1).toList
+    } else {
+      args
     }
     Process(argz).lazyLines_!
   }
