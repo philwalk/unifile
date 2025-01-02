@@ -11,7 +11,7 @@ import vastblue.unifile.*
  * Example conversion from sbt dependency format to scala-cli lib format:
  *
  * from:
- *   org.vastblue             %% unifile       % 0.3.7
+ *   org.vastblue             %% unifile       % 0.3.8
  *   org.vastblue             %% pallet        % 0.10.7
  *   org.scalanlp             %% breeze-viz    % 2.1.0
  *   org.scalanlp             %% breeze        % 2.1.0
@@ -23,7 +23,7 @@ import vastblue.unifile.*
  *   com.github.darrenjw      %% scala-glm     % 0.8
  *
  * to:
- *   //> using dep "org.vastblue::unifile::0.3.7"
+ *   //> using dep "org.vastblue::unifile::0.3.8"
  *   //> using dep "org.vastblue::pallet::0.10.7"
  *   //> using dep "org.scalanlp::breeze-viz::2.1.0"
  *   //> using dep "org.scalanlp::breeze::2.1.0"
