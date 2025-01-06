@@ -33,7 +33,6 @@ recognizes `posix` file paths in Windows, via customizable mount points in `C:/m
 To use `unifile` in an `SBT` project, add this dependency to `build.sbt`
 ```sbt
   "org.vastblue" % "unifile_3" % "0.3.9"
-```
 For `scala` or `scala-cli` scripts, see examples below.
 
 ## TL;DR
