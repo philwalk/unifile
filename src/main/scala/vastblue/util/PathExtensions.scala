@@ -73,6 +73,7 @@ trait PathExtensions {
   def exec(args: String*): String            = Platform._exec(args*)
 
   def execLines(args: String*): LazyList[String] = Platform._execLines(args*)
+  def execBelow(dir: Path, args: String*): LazyList[String] = Platform._execBelow(dir, args*)
 
   def shellExec(str: String): LazyList[String]                           = Platform._shellExec(str)
   def shellExec(str: String, env: Map[String, String]): LazyList[String] = Platform._shellExec(str, env)
