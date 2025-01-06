@@ -13,7 +13,7 @@ JVM support for `java.nio.file.Path` objects that work everywhere.
 
 <img alt="unifile image" width=200 src="images/plastic-pallet.png">
 
-Work with Posix paths in Windows, recognized mount points in `/etc/fstab`.
+recognizes `posix` file paths in Windows, via customizable mount points in `C:/msys64/etc/fstab`.
 
 * Supported Scala Versions
   * `scala 3.x`
@@ -32,7 +32,7 @@ Work with Posix paths in Windows, recognized mount points in `/etc/fstab`.
 
 To use `unifile` in an `SBT` project, add this dependency to `build.sbt`
 ```sbt
-  "org.vastblue" % "unifile_3" % "0.3.8"
+  "org.vastblue" % "unifile_3" % "0.3.9"
 ```
 For `scala` or `scala-cli` scripts, see examples below.
 
@@ -43,54 +43,55 @@ Simplicity and Universal Portability:
 * read process command lines from `/proc/$PID/cmdline` files
 ## Requirements
 In Windows, requires a posix shell:
-  ([MSYS64](https://msys2.org), [CYGWIN64](https://www.cygwin.com), or `WSL`)
+  * [MSYS64](https://msys2.org)
+  * [CYGWIN64](https://www.cygwin.com)
+  * [Git Bash](https://www.atlassian.com/git/tutorials/git-bash)
+  * [WSL](https://learn.microsoft.com/en-us/windows/wsl/install)
 
-Example code below assumes you have a recent version of coreutils:
+Example scripts require a recent version of coreutils:
   (e.g., `ubuntu`: 8.32-4.1ubuntu1, `osx`: stable 9.4)
-This allows you to use `#!/usr/bin/env -S scala` in script hash-bang lines.
+to support the use of `#!/usr/bin/env -S scala` in script hash-bang lines.
 
 ### Concept
-  * import `vastblue.file.Paths` instead of `java.nio.file.Paths`
+  * import vastblue.unifile.*
+* Exposes `vastblue.file.Paths` instead of `java.nio.file.Paths`
   * `Paths.get` returns `java.nio.file.Path` objects
   * `Paths.get("/etc/fstab").toString` == `C:\msys64\etc\fstab` (for example)
 
 Examples below illustrate some of the capabilities.
 
 ### Background
-The jvm doesn't support filesystem abstractions of `cygwin64`, `msys64`, etc.
+Most platforms other than `Windows` are unix-like, but with differing
+conventions and various incompatibilities:
+   * Linux / OSX `/usr/bin/env`, etc.
 
-Most platforms other than `Windows` are unix-like, but:
- * differing conventions and incompatibilities:
-   * Linux / OSX symantics of `/usr/bin/env`, etc.
+There are posix environments available in Windows, provided by `cygwin64`, `msys64`, `Git-bash`, etc.
+However, the `Windows` jvm doesn't recognize the `posix` filesystem abstractions provided by these environments.
 
 This library provides the missing piece.
 
+  * In Windows, a custom `Paths.get()` applies `/etc/fstab` mounts before returning a `java.nio.file.Path`.
+  * In other environments, it uses plain vanilla `java.nio.file.Paths.get()`
+  * to display a `Path` or `java.io.File`, extension methods provide `posix` or `native` formats.
+
 ### Example script: display the native path and the number of lines in `/etc/fstab`
-This example might surprise developers working in a `Windows` posix shell, since `jvm` languages normally cannot see posix file paths that aren't also legal `Windows` paths.
+The following example might surprise Windows developers, since JVM languages don't normally support posix file paths that aren't also legal Windows paths.
 
 ```scala
-#!/usr/bin/env -S scala -cli shebang
-
+#!/usr/bin/env -S scala-cli shebang
 
 //> using scala "3.4.3"
-//> using lib "org.vastblue::unifile::0.3.8"
+//> using dep "org.vastblue::unifile::0.3.9"
 
-import vastblue.unifile.Paths
+import vastblue.unifile.*
 
-object FstabCli {
-  def main(args: Array[String]): Unit = {
-    // `shellRoot` is the native path corresponding to "/"
-    // display the native path and lines.size of /etc/fstab
-    val p = Paths.get("/etc/fstab")
-    val lines = java.nio.file.Files.readAllLines(p).asScala.toSeq
-    printf("env: %-10s| %-22s | %d lines\n",
-      _uname("-o"), p.norm, lines.size)
-  }
-}
-
-FstabCli.main(args)
+// display the native path and lines.size of /etc/fstab
+// mapped to "C:\msys64\etc\fstab" in Windows
+val p = Paths.get("/etc/fstab")
+printf("%s\n", p.posx)
+printf("env: %-10s| %-22s | %d lines\n", uname("-o"), p.posx, p.lines.size)
 ```
-### Output of the previous example scripts on various platforms:
+### Output of the previous example script on various platforms:
 ```
 Linux Mint # env: GNU/Linux | shellRoot: /           | /etc/fstab            | 21 lines
 Darwin     # env: Darwin    | shellRoot: /           | /etc/fstab            | 0 lines
@@ -105,12 +106,13 @@ Note that on Darwin, there is no `/etc/fstab` file, so the `Path#lines` extensio
     * [MSYS64](https://msys2.org)
     * [CYGWIN64](https://www.cygwin.com)
     * [WSL](https://learn.microsoft.com/en-us/windows/wsl/install)
+    * [Git Bash](https://www.atlassian.com/git/tutorials/git-bash)
   * `Linux`: required packages:
     * `sudo apt install coreutils`
   * `Darwin/OSX`:
     * `brew install coreutils`
 
-### How to Write Portable Scala Scripts
+### Tips for Writing Portable Scala Scripts
 Things that maximize the odds of your script running on another system:
   * use `scala 3`
   * use `posix` file paths by default
@@ -119,13 +121,13 @@ Things that maximize the odds of your script running on another system:
     * drive letter not needed for paths on the current working drive (often C:)
     * to access disks other than the working drive, mount them via `/etc/fstab`
     * `vastblue.Paths.get()` can parse both `posix` and `Windows` filesystem paths
-  * don't assume path strings use `java.nio.File.separator` or `sys.props("line.separator")`
-  * use them to format output, as appropriate, never to parse path strings
-  * split strings with `"(\r)?\n"` rather than `line.separator`
-    * `split("\n")` can leave carriage-return debris lines ends
+  * The jvm provides `java.nio.File.separator` and `sys.props("line.separator")` for
+  * OS-appropriate line-endings.   They safe to use on output.
+  * But it's safer when parsing input text to be OS-agnostic:
+    * strings should be split into lines with `"(\r)?\n"`
   * create `java.nio.file.Path` objects in either of two ways:
     * `vastblue.file.Paths.get("/etc/fstab")
-    * `"/etc/fstab".path       // guaranteed to use `vastblue.file.Paths.get()`
+    * `"/etc/fstab".path  // uses `vastblue.file.Paths.get()` 
   * if client needs glob expression command line arguments, `val argv = prepArgs(args.toSeq)`
     * this avoids exposure to the `Windows` jvm glob expansion bug, and
     * inserts `script` path or `main` method class as `argv(0)` (as in C/C++)

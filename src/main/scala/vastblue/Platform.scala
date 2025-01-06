@@ -173,18 +173,25 @@ object Platform {
     _execLines(args *).toList.mkString("")
   }
 
-  // returns a LazyList
-  def _execLines(args: String*): LazyList[String] = {
-    // depends on PATH
+  private def _prepArgs(args: String*): Seq[String] = {
     require(args.nonEmpty)
     val arg0: String = args(0).replace('\\', '/')
-    val argz: Seq[String] = if (isWindows && !arg0.contains("/")) {
+    if (isWindows && !arg0.contains("/")) {
       val args0 = where(arg0)  // get full path
       arg0 :: args.drop(1).toList
     } else {
       args
     }
+  }
+
+  // returns a LazyList
+  def _execLines(args: String*): LazyList[String] = {
+    val argz: Seq[String] = _prepArgs(args *)
     Process(argz).lazyLines_!
+  }
+  def _execBelow(dir: Path, args: String*): LazyList[String] = {
+    val argz: Seq[String] = _prepArgs(args *)
+    Process(argz, dir.toFile).lazyLines_!
   }
   def _notWindows: Boolean = java.io.File.separator == "/"
   def _isWindows: Boolean  = !_notWindows
