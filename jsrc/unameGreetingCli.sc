@@ -2,7 +2,7 @@
 //package vastblue.demo
 
 //> using scala "3.4.3"
-//> using dep "org.vastblue::unifile:0.3.9"
+//> using dep "org.vastblue::unifile:0.3.12"
 
 import vastblue.unifile.*
 

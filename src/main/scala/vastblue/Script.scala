@@ -31,9 +31,20 @@ object Script {
   }
 
   def scriptNameSources = Seq(
-    _propOrEmpty("script.path"),
+    _propOrElse("script.path", mainFromStack),
     Script.searchStackTrace(new Exception()),
   )
+  def mainFromStack: String = {
+    // might return empty string?
+    val result = new java.io.StringWriter()
+    new RuntimeException("stack").printStackTrace(new java.io.PrintWriter(result))
+    val stack = result.toString.split("[\r\n]+").toList
+    // if (verbose ){ for( s <- stack) { printf("[%s]\n",s) } }
+    stack.filter { str => str.contains(".main(") }.map {
+      _.replaceAll(".*[(]","").
+      replaceAll("[:)].*","")
+    }.distinct.take(1).mkString("")
+  }
   def stackToClassName(e: StackTraceElement): String = {
     e.getClassName
   }

@@ -5,7 +5,7 @@ lazy val scalaVer = scala3
 lazy val supportedScalaVersions = List(scala3)
 // lazy val supportedScalaVersions = List(scalaVer)
 
-javacOptions ++= Seq("-source", "11", "-target", "11")
+javacOptions ++= Seq("-source", "17", "-target", "17")
 
 //enablePlugins(ScalaNativePlugin)
 //nativeLinkStubs := true
@@ -13,7 +13,7 @@ javacOptions ++= Seq("-source", "11", "-target", "11")
 //ThisBuild / envFileName   := "dev.env" // sbt-dotenv plugin gets build environment here
 ThisBuild / scalaVersion  := scalaVer
 
-ThisBuild / version       := "0.3.9"
+ThisBuild / version       := "0.3.12"
 ThisBuild / versionScheme := Some("semver-spec")
 
 ThisBuild / organization         := "org.vastblue"
@@ -61,8 +61,7 @@ resolvers += Resolver.mavenLocal
 
 publishTo := sonatypePublishToBundle.value
 
-Compile / packageBin / packageOptions +=
-  Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> "")
+//Compile / packageBin / packageOptions += Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> "")
 
 lazy val root = (project in file(".")).
   enablePlugins(BuildInfoPlugin).

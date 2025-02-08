@@ -305,12 +305,13 @@ trait PathExtensions {
     }
 
     def contentAsString: String = getContentAsString()
+    def contentAsString(cs: Charset): String = getContentAsString(cs)
 
     def length: Long = p.toFile.length
 
     def isDirectory: Boolean = p.toFile.isDirectory
     def isFile: Boolean      = p.toFile.isFile
-    def realpath: Path       = vastblue.file.Util._realpath(p)
+    def realpath: Path       = p.toRealPath() // vastblue.file.Util._realpath(p)
     def exists: Boolean      = JFiles.exists(p) // p.toFile.exists()
 
     def isSymbolicLink: Boolean = JFiles.isSymbolicLink(p)
@@ -352,7 +353,7 @@ trait PathExtensions {
       }
     }
 
-    def realPath: Path = toRealPath(p)
+    def realPath: Path = p.toRealPath() // toRealPath(p)
     def realpathLs: Path = { // ask ls what symlink references
       Platform._exec("ls", "-l", p.posx).split("\\s+->\\s+").toList match {
       case a :: b :: Nil => b.path
@@ -472,6 +473,7 @@ trait PathExtensions {
     def sha256: String    = Util.fileChecksum(f.toPath, algorithm = "SHA-256")
     def isEmpty: Boolean  = f.length == 0
     def nonEmpty: Boolean = f.length != 0
+    def contentAsString(cs: Charset): String = f.toPath.getContentAsString(cs)
 
     def relpath: Path           = f.toPath.relpath
     def stdpath: String         = Platform.standardizePath(f.toPath.toAbsolutePath.normalize.posx)

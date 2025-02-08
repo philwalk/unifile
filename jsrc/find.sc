@@ -1,4 +1,4 @@
-#!/usr/bin/env -S scala @${HOME}/.scala3cp
+#!/usr/bin/env -S scalaQ
 //package vastblue.demo
 
 // hash bang line error on OSX/Darwin due to non-gnu /usr/bin/env

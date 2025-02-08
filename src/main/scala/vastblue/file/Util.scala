@@ -428,6 +428,9 @@ object Util {
     }
   }
 
+  def contentAsString(p: Path, charset: Charset): String = {
+    linesCharset(p, charset).mkString("\n")
+  }
   def linesCharset(p: Path, charset: Charset): Seq[String] = {
     def readLines: Seq[String] = {
       try {
