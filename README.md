@@ -6,7 +6,7 @@
 + Simplify system administration tasks.
 + no 3rd party libraries, 100% scala.
 
-For this functionality, plus reading of `.csv`, expressive Date & Time functions, and more, see [Pallet](https://github.com/philwalk/unifile) instead (has 3rd party dependencies).
+For this functionality, plus reading of `.csv`, expressive Date & Time functions, and more, see [Pallet](https://github.com/philwalk/pallet) instead (has 3rd party dependencies).
 
 Write portable code that runs on Linux, Mac, or Windows.
 Converting path Strings to `java.nio.file.Path` objects.
