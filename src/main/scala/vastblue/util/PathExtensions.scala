@@ -130,7 +130,7 @@ trait PathExtensions {
 
   def showLimitedStack(e: Throwable = Util.newEx): Unit = vastblue.file.Util._showLimitedStack(e)
 
-  def scriptProp(e: Exception = new Exception()): StackTraceElement = Script.searchStackTrace(e)
+  //def scriptProp(e: Exception = new Exception()): StackTraceElement = Script.searchStackTrace(e)
 
 //  def prepArgs(args: Seq[String]) = Script.prepArgs(args)
 

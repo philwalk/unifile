@@ -1,14 +1,11 @@
-#!/usr/bin/env -S scalaQ
-//#!/usr/bin/env -S scala-cli shebang
+#!/usr/bin/env -S scala
 //package vastblue.demo
 
-//> using dep "org.vastblue::unifile:0.3.12"
+//> using dep "org.vastblue::unifile:0.4.1"
 import vastblue.unifile.*
 
-//CmdInfo.main(args)
 object CmdInfo {
   def main(args: Array[String]): Unit = {
-
     printf("[%s]\n", unifile.Info.scalaRuntimeVersion)
     printf("# args [%s]\n", args.toSeq.mkString("|"))
     for ((arg, i) <- args.zipWithIndex) {
