@@ -5,7 +5,6 @@ import vastblue.Platform.{DefaultCharset, _exec, readLines, relativize, standard
 import vastblue.file.Util.dummyFilter
 import vastblue.file.{Paths, Util}
 import java.time.LocalDateTime
-//import vastblue.time.TimeDate.now
 
 import java.io.File as JFile
 import java.io.{FileWriter, OutputStreamWriter, PrintWriter}
@@ -99,6 +98,11 @@ trait PathExtensions {
   def lsExe: String    = Platform._lsExe
   def trExe: String    = Platform._trExe
   def psExe: String    = Platform._psExe
+
+  def which(basename: String): String                             = Platform.which(basename)
+  def find(basename: String, dirs: Seq[String] = envPath): String = Platform.which(basename)
+  def isSameFile(p1: Path, p2: Path): Boolean                     = Utils.isSameFile(p1, p2)
+  def sameFile(s1: String, s2: String): Boolean                   = Utils.sameFile(s1, s2)
 
   def thisArg: String                  = ArgsUtil.thisArg
   def peekNext: String                 = ArgsUtil.peekNext
