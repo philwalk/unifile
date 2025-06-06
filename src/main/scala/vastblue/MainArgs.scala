@@ -39,8 +39,8 @@ object MainArgs {
       printf("_args [%s]\n", _args.mkString("|"))
       // new Exception().printStackTrace()
     }
-    val e: StackTraceElement = Script._scriptProp
-    val argv                 = (e.filePath :: _args.toList).toArray.toSeq
+    val filePath: String = Script.guessMainClass
+    val argv             = (filePath :: _args.toList).toArray.toSeq
     val validArgs = if (!isWindows || shell.isEmpty) {
       argv
     } else {
@@ -90,8 +90,7 @@ object MainArgs {
   }
 
   private val scriptArgz: Seq[String] = {
-    val e: StackTraceElement = scriptProp(new Exception)
-    val sprop                = e.filePath
+    val sprop: String = Script.guessMainClass
     val sjc: Array[String]   = sunJavaCommand.split(" ")
     var argz: Array[String] = {
       val list = sjc.dropWhile { (s: String) =>
@@ -212,7 +211,7 @@ object MainArgs {
     }
     val scriptArgs: Seq[String] = {
       import vastblue.Script.*
-      val scrpath: String       = Script._scriptProp.filePath
+      val scrpath: String       = Script.guessMainClass
       def notScriptPath         = (s: String) => !s.endsWith(scrpath) && !validScriptOrClassName(s)
       val rawtail: List[String] = rawargv.dropWhile(notScriptPath(_)).toList
       (scrpath :: rawtail.drop(1)).toIndexedSeq
