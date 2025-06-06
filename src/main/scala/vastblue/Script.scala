@@ -7,34 +7,82 @@ import java.nio.file.Path
 import vastblue.util.PathExtensions.*
 
 object Script {
-  private lazy val verby: String = Option(System.getenv("SCRIPT_VERBY")).getOrElse("")
-  private def verbyFlag          = verby.nonEmpty
+  private def verby: Boolean = {
+    def verbyVar: String = Option(System.getenv("SCRIPT_VERBY")).getOrElse("")
+    verbyVar.nonEmpty
+  }
 
-  def searchStackTrace(e: Exception = new Exception()): StackTraceElement = {
-    val stackList: List[StackTraceElement] = e.getStackTrace.toList
-    val relevant: StackTraceElement = stackList.dropWhile((e: StackTraceElement) =>
-      val s = e.toString
-      s.contains("unifile.") ||
-      s.contains("vastblue.Script.scala") ||
-      s.contains("vastblue.ArgsUtil.scala") ||
-      s.contains("vastblue.MainArgs") ||
-      s.contains("vastblue.util.") ||
-      s.contains("scalatest") ||
-      s.contains("junit")
-    ).take(1) match {
-    case Nil =>
-      stackList.last
-    case head :: tail =>
-      head
+  import scala.jdk.CollectionConverters.*
+  def classNames: Set[String] = Thread.getAllStackTraces.keySet().asScala
+    .flatMap(_.getStackTrace.map(_.getClassName))
+    .toSet
+
+  lazy val scalaCliScript = {
+    classNames.find { _.endsWith("$_") } match {
+    case Some(name) =>
+      // not always correct w.r.t. extension
+      s"${name.reverse.drop(2).reverse}.sc"
+    case None =>
+      classNames.find { _.endsWith("_sc") } match {
+      case Some(name) =>
+        // not always correct w.r.t. extension
+        s"${name.replaceFirst("_sc$", ".sc")}"
+      case None =>
+        Option(sys.props("script.path")).getOrElse("")
+      }
     }
-    relevant
+  }
+
+  def mainProgramPath: String = {
+    if (scalaCliScript.nonEmpty) {
+      if (java.nio.file.Files.isRegularFile(Paths.get(scalaCliScript))) {
+        scalaCliScript
+      } else {
+        val scrip = where(scalaCliScript)
+        scrip
+      }
+    } else {
+      Option(sys.props("script.path")).getOrElse("")
+    }
+  }
+
+  private val isWindows: Boolean = System.getProperty("os.name").toLowerCase.contains("win")
+  private lazy val finder = if (isWindows) "where.exe" else "which"
+  private def where(progname: String): String = {
+    import scala.sys.process.*
+    var (stdout, stderr) = (Vector.empty[String], Vector.empty[String])
+    val cmd = Seq(finder, scalaCliScript)
+    val status = cmd ! ProcessLogger(stdout :+= _.trim, stderr :+= _.trim)
+    val cliScriptPath = stdout.take(1).mkString.trim.replace('\\', '/') match {
+      case "" => progname
+      case str => str
+    }
+    cliScriptPath
+  }
+
+  private val propsScriptPath = _propOrElse("script.path", "")
+
+  // produce `scriptPath` or equivalent in various contexts:
+  //    scala-cli script
+  //    legacy scriptQ
+  //    IDE debugger session
+  def guessMainClass: String = {
+    if (mainProgramPath.nonEmpty) {
+      mainProgramPath
+    } else if (propsScriptPath.nonEmpty){
+      propsScriptPath
+    } else if (mainFromStack.nonEmpty) {
+      mainFromStack
+    } else {
+      "unknownMainClass"
+    }
   }
 
   def scriptNameSources = Seq(
     _propOrElse("script.path", mainFromStack),
-    Script.searchStackTrace(new Exception()),
+    scalaCliScript
   )
-  def mainFromStack: String = {
+  private def mainFromStack: String = {
     // might return empty string?
     val result = new java.io.StringWriter()
     new RuntimeException("stack").printStackTrace(new java.io.PrintWriter(result))
@@ -49,33 +97,15 @@ object Script {
     e.getClassName
   }
 
-//  def stackFilePath(e: StackTraceElement): String = {
-//    e.filePath
-//  }
   def _scriptPath: String = {
-    val scriptPath = sys.props("script.path")
-    if (Option(scriptPath).nonEmpty) {
-      scriptPath
-    } else {
-      _scriptProp.filePath
-    }
+    guessMainClass
   }
   def scriptName: String = _scriptPath match {
   case "" | "MainArgs.scala" | "mainargs.scala" | "Script.scala" =>
-    scriptProp().filePath.posx
+    guessMainClass.path.posx
   case name =>
     name.posx
   }
-  extension (e: StackTraceElement) {
-    def filePath: String = {
-      val fname      = e.getFileName
-      val class2path = e.getClassName.replace('.', '/')
-      class2path.replaceFirst("[^/]*$", fname)
-    }
-  }
-  def _scriptProp: StackTraceElement = Script.searchStackTrace(new Exception())
-  def stackElementFilePath: String   = _scriptProp.filePath
-  def stackElementClassName: String  = _scriptProp.getClassName
 
   // TODO: this works if running from a script, but need to gracefully do something
   // otherwise.  If executing from a jar file, read manifest to get main class

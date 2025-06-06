@@ -32,9 +32,9 @@ Recognizes `posix` file paths in Windows, via customizable mount points in `C:/m
 
 To use `unifile` in an `SBT` project, add this dependency to `build.sbt`
 ```sbt
-  "org.vastblue" % "unifile_3" % "0.3.12"
+  "org.vastblue" % "unifile_3" % "0.4.1"
 For `scala 3.5+` or `scala-cli` scripts:
-  "//> using dep org.vastblue:unifile_3:0.3.12"
+  "//> using dep org.vastblue:unifile_3:0.4.1"
 
 ## TL;DR
 Simplicity and Universal Portability:
@@ -83,7 +83,7 @@ The following example might surprise Windows developers, since JVM languages don
 #!/usr/bin/env -S scala-cli shebang
 
 //> using scala "3.4.3"
-//> using dep "org.vastblue::unifile:0.3.12"
+//> using dep "org.vastblue::unifile:0.4.1"
 
 import vastblue.unifile.*
 

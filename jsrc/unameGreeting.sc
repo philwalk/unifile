@@ -1,6 +1,6 @@
 #!/usr/bin/env -S scala-cli shebang
 
-//> using dep "org.vastblue::unifile:0.3.12"
+//> using dep "org.vastblue::unifile:0.4.1"
 import vastblue.unifile.*
 
 printf("uname / osType / osName:\n%s\n", s"platform info: ${unameShort} / ${osType} / ${osName}")
