@@ -19,12 +19,6 @@ object unifile extends PathExtensions {
   def posixroot: String                  = Platform.posixroot
   def isDirectory(path: String): Boolean = Platform.isDirectory(path)
 
-  def which(basename: String): String                             = Platform.which(basename)
-  def find(basename: String, dirs: Seq[String] = envPath): String = Platform.which(basename)
-
-  def isSameFile(p1: Path, p2: Path): Boolean   = util.Utils.isSameFile(p1, p2)
-  def sameFile(s1: String, s2: String): Boolean = util.Utils.sameFile(s1, s2)
-
   def prepArgs: Array[String] => Seq[String] = Platform.prepExecArgs
 
   def driveRelative(p: Path): Boolean = Utils.driveRelative(p)
