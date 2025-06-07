@@ -2,6 +2,7 @@ package vastblue.util
 
 import vastblue.{MainArgs, Platform, Script}
 import vastblue.Platform.{DefaultCharset, _exec, readLines, relativize, standardizePath, toRealPath}
+import vastblue.Platform.envPath
 import vastblue.file.Util.dummyFilter
 import vastblue.file.{Paths, Util}
 import java.time.LocalDateTime
