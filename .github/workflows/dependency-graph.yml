@@ -23,8 +23,8 @@ jobs:
       - name: Install sbt
         run: |
           echo "Installing sbt..."
-          curl -L https://www.scala-sbt.org/sbt-native-packages/sbt.tgz | tar xz
-          sudo mv sbt /usr/local/bin/
+          curl -L https://github.com/sbt/sbt/releases/download/v1.10.11/sbt-1.10.11.tgz | tar xz
+          sudo mv sbt/bin/sbt /usr/local/bin/
       - uses: scalacenter/sbt-dependency-submission@v2
         with:
           working-directory: './'
