@@ -39,21 +39,14 @@ ThisBuild / developers.withRank(KeyRanks.Invisible) := List(
 )
 
 // Remove all additional repository other than Maven Central from POM
-ThisBuild / publishTo := {
-  // For accounts created after Feb 2021:
-  val nexus = "https://s01.oss.sonatype.org/"
-  if (isSnapshot.value)
-    Some("snapshots" at nexus + "content/repositories/snapshots")
-  else
-    Some("releases" at nexus + "service/local/staging/deploy/maven2")
-}
+ThisBuild / publishTo := sonatypePublishToBundle.value
 
 ThisBuild / publishMavenStyle.withRank(KeyRanks.Invisible) := true
 
 ThisBuild / crossScalaVersions := supportedScalaVersions
 
 // For all Sonatype accounts created on or after February 2021
-ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
+ThisBuild / sonatypeCredentialHost := "https://central.sonatype.com/"
 
 resolvers += Resolver.mavenLocal
 
@@ -130,12 +123,19 @@ credentials += Credentials(
   "ignored",
 )
 
-credentials += Credentials(Path.userHome / ".sonatype_credentials") 
+val credFile = Path.userHome / ".sonatype_credentials"
+credentials ++= (
+  if (credFile.exists) Seq(Credentials(credFile))
+  else Seq(Credentials(
+    "Sonatype Nexus Repository Manager",
+    "central.sonatype.com",
+    sys.env.getOrElse("SONATYPE_USERNAME", ""),
+    sys.env.getOrElse("SONATYPE_PASSWORD", "")
+  ))
+)
 
 // Set this to the same value set as your credential files host.
-sonatypeCredentialHost := "s01.oss.sonatype.org"
-// Set this to the repository to publish to using `s01.oss.sonatype.org`
-// for accounts created after Feb. 2021.
-sonatypeRepository := "https://s01.oss.sonatype.org/service/local"
+sonatypeCredentialHost := "central.sonatype.com"
+sonatypeRepository := "https://central.sonatype.com/service/local"
 
 
