@@ -1,19 +1,17 @@
-//lazy val scala213 = "2.13.14"
-lazy val scala3   = "3.4.3"
+lazy val scala3 = "3.6.4"
 lazy val scalaVer = scala3
 
 lazy val supportedScalaVersions = List(scala3)
-// lazy val supportedScalaVersions = List(scalaVer)
 
 javacOptions ++= Seq("-source", "17", "-target", "17")
 
 //enablePlugins(ScalaNativePlugin)
 //nativeLinkStubs := true
-
 //ThisBuild / envFileName   := "dev.env" // sbt-dotenv plugin gets build environment here
 ThisBuild / scalaVersion  := scalaVer
 
-ThisBuild / version       := "0.4.1"
+lazy val projectName = "unifile"
+ThisBuild / version       := "0.4.3"
 ThisBuild / versionScheme := Some("semver-spec")
 
 ThisBuild / organization         := "org.vastblue"
@@ -26,8 +24,8 @@ parallelExecution := false
 
 ThisBuild / scmInfo := Some(
   ScmInfo(
-    url("https://github.com/philwalk/unifile"),
-    "scm:git@github.com:philwalk/unifile.git"
+    url(s"https://github.com/philwalk/$projectName"),
+    s"scm:git@github.com:philwalk/$projectName.git"
   )
 )
 
@@ -61,13 +59,14 @@ resolvers += Resolver.mavenLocal
 
 publishTo := sonatypePublishToBundle.value
 
-//Compile / packageBin / packageOptions += Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> "")
+Compile / packageBin / packageOptions +=
+  Package.ManifestAttributes(java.util.jar.Attributes.Name.CLASS_PATH -> "")
 
 lazy val root = (project in file(".")).
   enablePlugins(BuildInfoPlugin).
   settings(
     crossScalaVersions := supportedScalaVersions,
-    name               := "unifile",
+    name               := projectName,
     description        := "Support for expressive scripting",
  // mainClass          := Some("vast.apps.ShowSysProps"),
     buildInfoKeys      := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
@@ -75,8 +74,7 @@ lazy val root = (project in file(".")).
   )
 
 libraryDependencies ++= Seq(
-  "org.scalatest"         %% "scalatest"       % "3.2.19" % Test,
-//"com.github.sbt"         % "junit-interface" % "0.13.3" % Test,
+  "org.scalatest"         %% "scalatest"       % "3.2.20" % Test,
 )
 
 /*
@@ -115,9 +113,9 @@ case Some((2, n)) if n >= 13 =>
     "-Xsource:3",
     "-Xmaxerrs",
     "10",
- // "-Yscala3-implicit-resolution",
     "-Xsource:3",
     "-Xsource-features:implicit-resolution",
+    "-Yscala3-implicit-resolution",
     "-language:implicitConversions",
   )
 case _ =>

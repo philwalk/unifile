@@ -15,7 +15,7 @@ import java.io.{BufferedReader, FileReader}
 /* __DATA__
 a b c d e
 f g h i j
- */
+*/
 
 // The __DATA__ or __END__ section is ignored unless at the end of the file.
 // The above facsimile is not valid and will be ignored.
@@ -42,7 +42,7 @@ object HereData {
   }
 
   def scriptFname = Option(sys.props("script.path")) match {
-  case None       => sourceFileFromStack
+  case None       => sourceFileFromStack // only provides main object name
   case Some(path) => path
   }
 
@@ -113,4 +113,4 @@ object HereData {
 a=1
 b=2
 c=3
- */
+*/

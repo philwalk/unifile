@@ -1,6 +1,6 @@
 #!/usr/bin/env -S scala @/opt/ue3cps
 
-import vastblue.pallet.*
+import vastblue.unifile.*
 import vastblue.file.HereData.*
 
 object WordFreq {

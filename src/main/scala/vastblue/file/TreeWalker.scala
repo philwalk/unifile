@@ -34,7 +34,7 @@ object TreeWalker {
   // Walk directory tree:
   //   recovers from permission security exceptions
   //   much faster than Files.walk
-  // Caveat: in Windows, pukes if directory name has trailing dot
+  // Caveat: in Windows, it pukes if directory name has trailing dot
   def walkTreeFast(dir: Path, tossDirs: Set[String] = Set.empty[String], maxdepth: Int = -1)(filt: Path => Boolean): (Long, Long) = {
     class TreeWalker(examine: Path => Boolean) extends SimpleFileVisitor[Path] {
       var (visited, matched)  = (0L, 0L)

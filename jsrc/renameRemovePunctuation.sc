@@ -6,7 +6,7 @@
 * Not intended to affect path separators, dots, hyphens or underscores.
 * First renames parent directories, then works its' way down the paths.
 */
-import vastblue.pallet.*
+import vastblue.unifile.*
 import vastblue.math.Cksum
 import scala.collection.immutable
 import scala.util.matching.Regex

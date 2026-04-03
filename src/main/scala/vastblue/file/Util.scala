@@ -61,20 +61,18 @@ object Util {
   }
 
   def getLimitedStackTrace(implicit ee: Throwable = newEx): String = {
-    getLimitedStackList.mkString("\n")
+    getLimitedStackList().mkString("\n")
   }
 
   /** default filtering of stack trace removes known debris */
-  def getLimitedStackList(implicit ee: Throwable = new RuntimeException("getLimitedStackTrace")): List[String] = {
+  def getLimitedStackList(implicit ee: Throwable): List[String] = {
     currentStackList(ee).filter { entry =>
       entry.charAt(0) == ' ' || // keep lines starting with non-space
       (!entry.contains("at scala.")
         && !entry.contains("at oracle.")
         && !entry.contains("at org.")
-        && !entry.contains("at codehaus.")
         && !entry.contains("at sun.")
         && !entry.contains("at java")
-        && !entry.contains("at scalikejdbc")
         && !entry.contains("at net.")
         && !entry.contains("at dotty.")
         && !entry.toLowerCase.contains("(unknown source)"))
@@ -90,18 +88,15 @@ object Util {
   def currentStackList(ee: Throwable = new RuntimeException("currentStackList")): List[String] = {
     currentStack(ee).split("[\r\n]+").toList
   }
+
   def notWindows: Boolean = java.io.File.separator == "/"
   def isWindows: Boolean  = !notWindows
 
   // set initial codec value, affecting default usage.
   import scala.io.Codec
   def writeCodec: Codec = {
-    def osDefault = if (isWindows) {
-      Codec.ISO8859
-    } else {
-      Codec.UTF8
-    }
-    val lcAll: String = Option(System.getenv("LC_ALL")).getOrElse(osDefault.toString)
+    //def osDefault = if (isWindows) { Codec.ISO8859 } else { Codec.UTF8 }
+    val lcAll: String = Option(System.getenv("LC_ALL")).getOrElse("UTF-8")
     lcAll match {
     case "UTF-8" | "utf-8" | "en_US.UTF-8" | "en_US.utf8" =>
       Codec.UTF8 // "mac" | "linux"
@@ -730,8 +725,9 @@ object Util {
 
   def cliCksum(p: Path): (Long, Long) = {
     def q = "\""
-    val cmd = s"$q${posx(p)}$q"
-    val cksumstr = Platform._shellExec(s"cksum $cmd").mkString.trim
+    //val cmd = s"$q${posx(p)}$q"
+    //val cksumstr = Platform._shellExec(s"cksum $cmd").mkString.trim
+    val cksumstr: String = Seq("cksum", p.toString.replace('\\', '/')).!!.trim
     val Array(cksum, bytes) = cksumstr.replaceAll(" *([0-9]+) *([0-9]+) .*", "$1 $2").split(" ")
     (cksum.trim.toLong, bytes.trim.toLong)
   }

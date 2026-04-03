@@ -1,5 +1,7 @@
-#!/usr/bin/env -S scala @./atFile
+#!/usr/bin/env -S scala-cli shebang
 //package vastblue.demo
+
+//> using dep org.vastblue::unifile:0.4.2
 
 import vastblue.unifile.*
 import vastblue.MainArgs
@@ -23,6 +25,7 @@ object Demo {
       for ((arg, i) <- argv.zipWithIndex) {
         printf("%2d: [%s]\n", i, arg)
       }
+      sys.error("show-limited-stack")
     } catch {
       case e: Exception =>
         showLimitedStack(e)
